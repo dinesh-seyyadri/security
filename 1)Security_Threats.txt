@@ -1,0 +1,242 @@
+Vulnerability: A weakness that compromises either the security or the functionality of a system. 
+              Weak or easily guessed passwords are considered vulnerabilities.
+              
+Exploit: The mechanism that is used to leverage a vulnerability to compromise the security or functionality of a system. An example of an exploit is an exploit tool. When a vulnerability is disclosed to the public, attackers often create a tool that implements an exploit for the vulnerability. 
+          If they release this tool to the Internet, other attackers with very little skill can effectively exploit the vulnerability.
+
+Threat: Any circumstance or event with the potential to cause harm to an asset in the form of destruction, disclosure, adverse modification of data, or DoS. 
+        An example of a threat is malicious software that targets workstations.
+        
+Risk: The likelihood that a particular threat using a specific attack will exploit a particular vulnerability of an asset that results in an undesirable consequence.
+
+Attacks:
+
+1) DoS and DDoS:
+
+ DoS attacks are considered a major risk, because they can easily disrupt the operations of a business, and they are relatively simple to conduct. A TCP SYN flood attack is a classic example of a DoS attack. 
+ The TCP SYN flood attack exploits the TCP three-way handshake design by sending multiple TCP SYN packets with random source addresses to a victim host. The victim host sends a SYN ACK back to the random source address and adds an entry to the connection table. 
+ Because the SYN ACK is destined for an incorrect or nonexistent host, the last part of the three-way handshake is never completed and the entry remains in the connection table until a timer expires. 
+ By generating TCP SYN packets from random IP addresses at a rapid rate, the attacker can fill up the connection table and deny TCP services (such as email, file transfer, or WWW) to legitimate users. 
+ There is no easy way to trace the originator of the attack because the IP address of the source is forged.
+ 
+  In Ping of Death attacks, the attacker creates a fragment, specifying a fragment offset indicating a full packet size of more than 65,536 bytes. 65,536 bytes is the maximum packet size as defined by the IP protocol. 
+  A vulnerable machine that receives this type of fragment will attempt to set up buffers to accommodate the packet reassembly, and the out-of-bounds request causes the system to crash or reboot. The Ping of Death exploits vulnerabilities in processing at the IP layer, but there have been similar attacks exploiting vulnerabilities at the application layer. 
+  Attackers have also exploited vulnerabilities by sending malformed SNMP, syslog, DNS, or other UDP-based protocol messages.
+ 
+ Botnet:
+ A botnet consists of a group of "zombie" computers that run robots (or bots) and a master control mechanism that provides direction and control for the zombies. 
+ The originator of a botnet uses the master control mechanism on a command-and-control server to control the zombie computers remotely, often by using IRC.
+ 
+ DDoS:
+ When a DoS attempt derives from a single host of the network, it constitutes a DoS attack. 
+ Malicious hosts can also coordinate to flood a victim with an abundance of attack packets, so that the attack takes place simultaneously from potentially thousands of sources. This type of attack is called a DDoS attack. 
+ DDoS attacks typically emanate from networks of compromised systems that are known as botnets.
+ 
+ 2) Spoofing:
+ An attack can be considered a spoofing attack any time an attacker injects traffic that appears to be sourced from a system other than the attacker's system itself. 
+ Spoofing is not specifically an attack, but spoofing can be incorporated into various types of attacks.
+ 
+     a)IP address spoofing:
+       IP address spoofing is the most common type of spoofing. To perform IP address spoofing, attackers use source IP addresses that are different than their real IP addresses.
+ 
+    b)MAC address spoofing: To perform MAC address spoofing, attackers use MAC addresses that are not their own. 
+      MAC address spoofing is generally used to exploit weaknesses at Layer 2 of the network.
+ 
+    c)Application or service spoofing: An example of this is DHCP spoofing, which can be done with either the DHCP server or the DHCP client. 
+      To perform DHCP server spoofing, the attacker enables a rogue DHCP server on a network. When a victim host requests a DHCP configuration, the rogue DHCP server responds before the authentic DHCP server. 
+      The victim is thereby assigned an attacker-defined IP configuration. From the client side, an attacker can spoof many DHCP client requests, specifying a unique MAC address per request. This may exhaust the DHCP server's IP address pool, leading to a DoS against valid DHCP client requests. 
+      Another simple example of spoofing at the application layer is an email from an attacker which appears to have been sourced from a trusted email account.
+
+3) Reflection and Amplification Attacks:
+
+
+
+A reflection attack is a type of DoS attack in which the attacker sends a flood of protocol request packets to various IP hosts. 
+The attacker spoofs the source IP address of the packets such that each packet has as its source address the IP address of the intended target rather than the IP address of the attacker. The IP hosts that receive these packets become "reflectors." 
+The reflectors respond by sending response packets to the spoofed address (the target), thus flooding the unsuspecting target.
+If the request packets that are sent by the attacker solicit a larger response, the attack is also an amplification attack.
+In an amplification attack, a small forged packet elicits a large reply from the reflectors. For example, some small DNS queries elicit large replies. 
+Amplification attacks enable an attacker to use a small amount of bandwidth to create a massive attack on a victim by hosts around the Internet.
+It is important to note that reflection and amplification are two separate elements of an attack. An attacker can use amplification with a single reflector or multiple reflectors. 
+Reflection and amplification attacks are very hard to trace because the actual source of the attack is hidden.
+A classic example of reflection and amplification attacks is the smurf attack, which was common during the late 1990s. 
+Although the smurf attack no longer poses much of a threat (because mitigation techniques became standard practice some time ago), it provides a good example of amplification. 
+In a smurf attack, the attacker sends numerous ICMP echo-request packets to the broadcast address of a large network. These packets contain the victim's address as the source IP address. 
+Every host that belongs to the large network responds by sending ICMP echo-reply packets to the victim. 
+The victim is flooded with unsolicited ICMP echo-reply packets.
+The figure below illustrates a smurf attack. Note the differentials in bandwidth of the Internet connections. 
+The attacker has a very small, 56 Kbps dial-up connection. The target has a much larger T1 connection (1.544 Mbps). 
+The reflector network has an even larger DS3 connection (45 Mbps). The small 56K stream of echo requests with the spoofed source address of victim 10.1.1.5 is sent to the broadcast addresses of the large network. 
+As a result, thousands of echo replies are sent to 10.1.1.5 for each spoofed echo, and the target T1 is fully consumed.
+
+Smurf attacks can easily be mitigated on a Cisco IOS device by using the no ip directed-broadcast interface configuration command, which has been the default setting in Cisco IOS Software since release 12.0. 
+With the no ip directed-broadcast command configured for an interface, broadcasts destined for the subnet to which that interface is attached will be dropped, rather than being broadcast.
+
+ 
+ In February 2014, an NTP amplification attack generated a new record in attack traffic, over 400 Gbps. NTP has some characteristics that make it an attractive attack vector.
+ Like DNS, NTP uses UDP for transport. Like DNS, some NTP requests can result in replies that are much larger than the request. 
+ For example, NTP supports a command that is called monlist, which can be sent to an NTP server for monitoring purposes. 
+ The monlist command returns the addresses of up to the last 600 machines with which the NTP server has interacted. If the NTP server is relatively active, this response is much bigger than the request sent, making it ideal for an amplification attack.
+ 
+ 4)Social Engineering:
+ 
+ Social engineering is manipulating people and capitalizing on expected behaviors. 
+ Social engineering often involves utilizing social skills, relationships, or understanding of cultural norms to manipulate people inside a network to provide the information that is needed to access the network. 
+ The following are examples of social engineering:
+ a)Calling users on the phone claiming to be IT
+ b)An individual without a badge following a badged user into a badge-secured area ("tailgating”)
+ c)Developing fictitious personalities on social networking sites to obtain and abuse “friend” status
+ d)Sending an email enticing a user to click a link to a malicious website ("phishing")
+ e)Visual hacking, where the attacker physically observes the victim entering credentials (such as a workstation login, an ATM PIN, or the combination on a physical lock).
+ 
+ 5)Phishing :
+ The original concept of phishing (sending email enticing users to click a link to a malicious website) was clever, and it continues to be effective.
+ It is easy to send huge numbers of emails. 
+ Obtaining a fraction of a percent of positive responses is significant. 
+ However, more sophisticated forms of phishing have evolved from the original phishing emails, which are sent to huge numbers of addresses rather indiscriminately.
+ 
+ a)Spear phishing:
+ b)Whaling:
+ c)Pharming:
+ d)Watering hole:
+ e)Vishing:
+ f)Smishing:
+ 
+ 6)Password Attacks:
+ 
+ a)Guessing:
+ b)Brute force:
+ c)Dictionary attacks:
+ 
+ A password attack can be either an online attack or an offline attack. 
+ In an online attack, an attacker makes repeated attempts to log in. 
+ The activity is visible to the authentication system, so the system can automatically lock the account after too many bad guesses. 
+ Account lockout disables the account and makes it unavailable for further attacks during the lockout period. The lockout period and the number of allowed logon attempts are configurable by a system administrator.
+
+Offline attacks are far more dangerous. 
+In an online attack, the password has the protection of the system in which it is stored, but there is no such protection in offline attacks. 
+In an offline attack, the attacker captures the password hash or the encrypted form of the password. 
+The attacker can then make countless attempts to crack the password without being noticed. The longer and more complex a password, the more difficult and time-consuming it is for attackers to crack it.
+Many authentication systems require a certain degree of password complexity. 
+Specifying a minimum length of a password and forcing an enlarged character set (upper case, lower case, numeric, and special characters) can have an enormous influence on the feasibility of brute force attacks. 
+However, if users attempt to meet the enlarged character set requirements by making simple adjustments, such as capitalizing the first letter and appending a number and an exclamation point (changing, for example, unicorn to Unicorn1!), little is gained against a dictionary attack using some simple transforms.
+ 
+ 7) Reconnaissance attack:
+  is an attempt to learn more about the intended victim before attempting a more intrusive attack
+  DNS quiries
+  Ping sweeps of the addresses revealed by the DNS queries can present a picture of the live hosts in a particular environment. 
+  After a list of live hosts is generated, the attacker can probe further by running port scans on the live hosts. Port scanning tools can cycle through all well-known ports to provide a complete list of all services running on the hosts. 
+  The attacker can use this information to determine the easiest way to exploit a vulnerability.
+  
+  IDEL SCAN **own research
+  
+ 8) Buffer Over Flow:
+ Attackers can analyze network server applications for flaws. A buffer overflow vulnerability is one type of flaw. 
+ If a service accepts input and expects the input to be within a certain size but does not verify the size of input upon reception, it may be vulnerable to a buffer overflow attack.
+ This means that an attacker can provide input that is larger than expected, and the service will accept the input and write it to memory, filling up the associated buffer and also overwriting adjacent memory.
+ This overwrite may corrupt the system and cause it to crash, resulting in a DoS. 
+ In the worst cases, the attacker can inject malicious code in the buffer overflow, leading to a system compromise.
+ 
+ Buffer overflow attacks are a common vector for client-side attacks. 
+ Malicious code can be injected into data files, and the code can be executed when the data file is opened by a vulnerable client application. 
+ For example, assume that an attacker posts such an infected file to the Internet. 
+ An unsuspecting user downloads the document and opens it with a vulnerable application. 
+ On the user's system, this spawns a malicious process that can connect to rogue systems on the Internet and download more malicious payloads. 
+ Firewalls generally do a much better job of preventing inbound malicious connections from the Internet than they do of preventing outbound malicious connections to the Internet.
+ 
+ 
+ 9) Man in the Middle:
+ 
+  Generally, in these attacks, a system that has the ability to view the communication between two systems imposes itself in the communication path between those other systems. 
+  Man-in-the-middle attacks are complex attacks that require successful attacks against IP routing or protocols (such as ARP, DNS, or DHCP), resulting in the misdirection of traffic.
+  For example, an ARP-based man-in-the-middle attack is achieved when an attacker poisons the ARP cache of two devices with the MAC address of the attacker's NIC. Once the ARP caches have been successfully poisoned, each victim device sends all its packets to the attacker when communicating to the other device. 
+  This puts the attacker in the middle of the communications path between the two victim devices. 
+  It allows an attacker to easily monitor all communication between victim devices. The intent is to intercept and view the information being passed between the two victim devices and potentially introduce sessions and traffic between the two victim devices.
+ 
+ A man-in-the-middle attack can be passive or active. 
+ In passive attacks, attackers steal confidential information. 
+ In active attacks, attackers modify data in transit or inject data of their own. 
+ ARP cache poisoning attacks often target a host and the host’s default gateway. 
+ This puts the attacker as a man-in-the-middle between the host and all other systems outside of the local subnet.
+ 
+ 10)Malware:
+ 
+ 
+ a)Viruses: A virus is a type of malware that propagates by inserting a copy of itself into another program and becoming part of that program. 
+   It spreads from one computer to another, leaving infections as it travels. Viruses require human help for propagation, such as the insertion of an infected USB drive into a USB port on a PC. 
+   Viruses can range in severity from causing mildly annoying effects to damaging data or software and causing DoS conditions.
+ 
+ b)Worms: Computer worms are similar to viruses in that they replicate functional copies of themselves and can cause the same type of damage. 
+ In contrast to viruses, which require the spreading of an infected host file, worms are standalone software and do not require a host program or human help to propagate. 
+ To spread, worms either exploit a vulnerability on the target system or use some kind of social engineering to trick users into executing them. A worm enters a computer through a vulnerability in the system and takes advantage of file-transport or information-transport features on the system, allowing it to travel unaided.
+ 
+ c)Trojan horses: A Trojan horse is named after the wooden horse the Greeks used to infiltrate Troy. 
+ It is a harmful piece of software that looks legitimate. 
+ Users are typically tricked into loading and executing it on their systems. 
+ After it is activated, it can achieve any number of attacks on the host, from irritating the user (popping up windows or changing desktops) to damaging the host (deleting files, stealing data, or activating and spreading other malware, such as viruses). Trojans are also known to create back doors to give malicious users access to the system. 
+ Unlike viruses and worms, Trojans do not reproduce by infecting other files nor do they self-replicate.
+ Trojans must spread through user interaction such as opening an email attachment, or downloading and running a file from the Internet.
+
+ 
+ ############################
+ 
+ Common vectors of data loss and exfiltration include the following:
+ 
+ a) Email attachments: Email attachments often contain sensitive information like confidential corporate, customer, and personal data. The attachments can leave the organization in various ways. 
+    For example, the email with the attachment might be intercepted or a user might accidentally send the email to the wrong person.
+
+ b) Unencrypted devices: Smartphones and other personal devices are often protected only with a password. 
+    Employees sometimes send sensitive company information to these devices. 
+    While the data may be encrypted while traversing the Internet to the device, it can be unencrypted when it lands on the personal device. 
+    If the device password is compromised, an attacker can steal corporate data and perhaps even gain unauthorized access to the company network.
+
+ c) Cloud storage services: Company employees are often tempted to transfer large files by using cloud storage services of their own choosing without the approval of the company IT department. 
+    This can result in theft of sensitive documents by someone like a social network “friend” with whom the employee shares a directory on the cloud storage server.
+
+ d) Removable storage devices: Putting sensitive data on a removable storage device may pose more of a threat than putting that data on a smartphone.
+   Such devices are not only easily lost or stolen; they also typically do not have passwords, encryption, or any other protection for the data they contain. 
+   While such protection for removable storage devices is available, it is relatively expensive and infrequently used as of this writing.
+ 
+ e) Improper access controls: Without proper access controls such as ACLs on firewalls, the risk of data loss is high. 
+    Organizations can lower their risk of data loss by fine-tuning access controls and patching known vulnerabilities.
+    
+ #################
+ 
+ Hacking Tools:
+ 
+ 1)sectools.org
+ 2)Kali Linux
+ 3)Metasploit
+ 
+ ######
+ 
+ New Treats:
+ 
+a) Cognitive threats via social networks: Social engineering takes a new meaning in the era of social networking.
+  Attackers can create false identities on social networks, building and exploiting friend relationships with others on the social network. 
+  Phishing attacks can much more accurately target susceptible audiences. 
+  Confidential information may be exposed due to lack of defined or enforced policy.
+  
+b) Consumer electronics exploits: The operating systems on consumer devices (smartphones, tablets, and so on) are an option of choice for high-volume attacks. 
+   The proliferation of applications for these operating systems, and the nature of the development and certification processes for those applications, augments the problem. 
+   The common expectation of BYOD support within an organization’s network increases the importance of this issue.
+   
+c) Widespread website compromises: Malicious attackers compromise popular websites, forcing the sites to download malware to connecting users. 
+   Attackers typically are not interested in the data on the website, but they use it as a springboard to infect the systems of users connecting to the site.
+   
+d) Disruption of critical infrastructure: The Stuxnet malware, which exploits holes in Windows systems and targets a specific Siemens supervisory control and data acquisition (SCADA) program with sabotage, confirmed concerns about an increase in targeted attacks that are aimed at the power grid, nuclear plants, and other critical infrastructure.
+
+e) Virtualization exploits: Device and service virtualization add more complexity to the network. Attackers know this and are increasingly targeting virtual servers, virtual switches, and trust relationships at the hypervisor level.
+
+f) Memory scraping: Increasingly popular, this technique is aimed at fetching information directly from volatile memory. The attack tries to exploit operating systems and applications that leave traces of data in memory. Attacks are particularly aimed at accessing data that is encrypted when stored on disk or sent across a network but is clear text when processed in the RAM of the compromised system.
+
+g) Hardware hacking: These attacks are aimed at exploiting the hardware architecture of specific devices, with consumer devices being increasingly popular. Attack methods include bus sniffing, altering firmware, and memory dumping to find crypto keys. 
+   Hardware-based keyloggers can be placed between a keyboard and computer system. ATM machines can be hacked with inconspicuous magnetic card readers and microcameras.
+   
+h) IPv6-based attacks: These attacks are becoming more pervasive as the migration to IPv6 becomes widespread. Attackers are focusing initially on covert channels through various tunneling techniques, and man-in-the-middle attacks leverage IPv6 to exploit IPv4 in dual-stack deployments.
+ 
+ 
+ 
+ 
+ 
+ 

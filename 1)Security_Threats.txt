@@ -1,3 +1,6 @@
+Training Notes:
+______________________
+
 Vulnerability: A weakness that compromises either the security or the functionality of a system. 
               Weak or easily guessed passwords are considered vulnerabilities.
               

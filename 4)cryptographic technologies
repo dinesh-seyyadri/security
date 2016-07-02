@@ -1,0 +1,14 @@
+Cryptographic Technologies:
+
+Cryptography is the practice and study of techniques to secure communications in the presence of third parties. 
+Historically, cryptography was synonymous with encryption. 
+Its goal was to keep messages private. In modern times, cryptography includes other responsibilities:
+
+Confidentiality: Ensuring that only authorized parties can read a message.
+
+Data Integrity: Ensuring that any changes to data in transit will be detected and rejected.
+
+Origin Authentication: Ensuring that any messages received were actually sent from the perceived origin.
+
+Non-Repudiation: Ensuring that the original source of a secured message cannot deny having produced the message.
+

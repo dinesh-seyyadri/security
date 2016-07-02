@@ -1,14 +1,143 @@
 Defense technologies:
-1)Firewalls:
+
+1)Firewalls:A firewall is a system that enforces an access control policy between two or more security zones.
+  A firewall can be a hardware appliance or a software program. Although firewalls can be placed in various locations within a network (including on endpoints), they are typically placed at the Internet edge, where they provide vital security. 
+  Firewall threat controls should be implemented at least at the most exposed and critical parts of enterprise networks. 
+  The Internet edge is the network infrastructure that provides connectivity to the Internet and acts as the gateway for the enterprise to the rest of the cyberspace.
+  Because it is a public-facing network infrastructure, it is particularly exposed to a large array of external threats.
+  
+  Firewalls are also often used to protect data centers. The data center houses most of the critical applications and data for an enterprise.
+  The data center is primarily inward facing and most clients are on the internal network.
+  The intranet data center is still subject to external threats, but must also be guarded against threat sources inside the network perimeter.
+
+
+  In addition to standard first-generation firewall capabilities, NGFWs have capabilities such as the following:
+   -Integrate security functions tightly to provide highly effective threat and advanced malware protection
+   -Implement policies that are based on application visibility instead of transport protocols and ports
+   -Provide URL filtering and other controls over web traffic
+   -Provide actionable indications of compromise to identify malware activity
+   -Offer comprehensive network visibility
+   -Help reduce complexity
+   -Integrate and interface smoothly with other security solutions
 
 2)Intrusion Prevention Systems:
 
-3)VPNs;
+An IPS is a system that performs deep analysis of network traffic, searching for signs of suspicious or malicious behavior. 
+If it detects such behavior, the IPS can take protective action.
+Because it can perform deep packet analysis, an IPS can complement a firewall by blocking attacks that would normally pass through a traditional firewall device. For example, an IPS can detect and block a wide range of malicious files and behavior, including botnet attacks, malware, and application abuse.
+Network-based IPS technology is deployed in a sensor, which can be a dedicated appliance or a module that is installed in another network device. 
+There are also host-based IPSs that only detect attacks that occur on the hosts on which they are installed.
 
-4)Content Security:
+
+There are several methods of traffic inspection that are used in various IPSs:
+
+-Signature-based inspection: A signature-based IPS examines the packet headers or data payloads in network traffic and compares the data against a database of known attack signatures. 
+ The database must be continually updated in order to remain effective. A signature might be a sequence or a string of bytes in a certain context. 
+ Signature-based inspection is sometimes referred to as rule-based or pattern-matching inspection.
+
+-Anomaly-based inspection: Anomaly-based network IPS devices observe network traffic and act if a network event outside normal network behavior is detected.
+ There are two types of anomaly-based network IPS:
+
+a)Statistical anomaly detection (network behavior analysis): Observes network traffic over time and builds a statistical profile of normal traffic behavior based on communication patterns, traffic rate, mixture of protocols, and traffic volume. After a normal profile has been established, statistical anomaly detection systems detect or prevent activity that violates the normal profile.
+
+b)Protocol verification: Observes network traffic and compares network, transport, and application layer protocols that are used inside network traffic to protocol standards. If a deviation from standards-based protocol behavior is detected (such as a malformed IP packet), the system can take appropriate action.
+
+-Policy-based inspection: A policy-based IPS analyzes network traffic and takes action if it detects a network event outside a configured traffic policy.
+
+
+Modern IPSs (NGIPSs) combine the benefits of these inspection methods. They utilize technology such as traffic normalization and protocol decodes to counter evasive attacker techniques and to improve efficacy. They also utilize newer and more sophisticated technologies such as reputation, context awareness, event correlation, and cloud-based services to provide more robust and flexible protection.
+
+
+3)VPNs:
+
+A VPN is a technology that secures communication across an untrusted network. 
+By definition, as per RFC 2828, a VPN is “a restricted-use, logical (i.e., artificial or simulated) computer network that is constructed from the system resources of a relatively public, physical (i.e., real) network (such as the Internet), often by using encryption (located at hosts or gateways), and often by tunneling links of the virtual network across the real network.”
+
+Simply stated, a VPN can be defined as:
+Virtual: Logical networks, independent of physical architecture.
+Private: Independent of IP addressing and routing schemes (noncryptographic approaches). Secure confidentiality, message integrity, and origin authentication (cryptographic approaches).
+Network: Interconnected computers, devices, and resources that are grouped to share information.
+
+Encryption is the process of disguising a message in such a way as to hide its original contents. 
+VPNs were initially developed to deal with the security issues of transmitting clear text data across a network.
+Clear text data is information that can be examined and understood by anyone. 
+Examples of applications that send traffic in a clear text format are Telnet, file transfers via FTP or TFTP, and email using the POP or SMTP.
+
+Encryption scrambles data into what appears as a random string of characters, converting the data to ciphertext (encrypted data). 
+Only the destination device can decipher the information. 
+Decryption reverses the process of encryption.
+
+Encryption can be implemented with one of the two following methods:
+ a)Link encryption: The entire frame is encrypted between two devices; this is used on point-to-point connections of directly connected devices.
+ b)Packet payload encryption: Only the packet payload is encrypted, which allows this form of encryption to be routed across a Layer 3 network, such as the Internet.
+
+To be effective, a cryptographic VPN must provide:
+a) Confidentiality: The assurance that no one except the intended recipient can read the data traversing the VPN. The purpose of encryption is to guarantee confidentiality.
+
+b) Origin authentication: The assurance that the endpoint entities are legitimate (who they claim to be).
+
+c) Data integrity: The assurance that data traversing the VPN has not been altered in transit, intentionally or unintentionally.
+
+VPNs are classified according to the following criteria:
+
+Deployment mode: Site-to-site VPN and remote-access VPN. 
+                A site-to-site VPN provides an Internet-based WAN infrastructure for connecting branch offices, home offices, or the sites of business partners to all or portions of a network. 
+                A remote-access VPN provides secure communications for remote access to networks and applications. Hosts can establish remote-access VPNs either by using VPN client software or by using an SSL-enabled web browser.
+
+Underlying technology: IPsec VPN, SSL VPN, MPLS VPN, other Layer 2 technologies such as Frame Relay or ATM, and hybrid VPNs combining multiple technologies.
+
+Cryptographic VPNs have many benefits:
+
+Security: VPNs provide the highest level of security by using advanced encryption and authentication protocols that protect data from unauthorized access.
+
+Scalability: VPNs enable corporations to use the Internet infrastructure within ISPs and devices, which makes it easy to add new users. Therefore, corporations are able to add large amounts of capacity without adding significant infrastructure.
+
+Compatibility with broadband technology: VPNs allow mobile workers, telecommuters, and people who want to extend their workday to take advantage of high-speed, broadband connectivity to gain access to their corporate networks, providing workers significant flexibility and efficiency.
+
+
+Cost savings: VPNs enable organizations to use cost-effective third-party Internet transport to connect remote offices and remote users to the main corporate site, thus eliminating expensive dedicated WAN links. Furthermore, with the advent of cost-effective high-bandwidth technologies, organizations can use VPNs to reduce their connectivity costs while simultaneously increasing remote connection bandwidth.
+
+
+4)Content Security:Content security systems provide fine-grained control and security on particular network applications. 
+  Examples of Cisco content security products include the Cisco Email Security Appliance (ESA) and the Cisco Web Security Appliance (WSA).
+  The Cisco ESA is  a type of firewall and threat monitoring appliance for SMTP traffic that offers the following:
+  The capability to quickly block new email-based blended attacks
+  The capability to control or encrypt sensitive outbound email
+  A rapid spam capture rate and few false positives
+  A proven zero-hour antivirus solution
+
+The Cisco WSA provides secure web access, content security, and threat mitigation for web services. 
+In addition to helping to secure and control web traffic, the Cisco WSA provides the following forms of protection:
+  Advanced malware protection
+  Application visibility and control
+  Insightful reporting
+  Secure mobility
 
 
 5)Endpoint Security:
-
+ a)Personal firewalls
+ b)Antivirus software
+ c)Antispyware software
 
 6)Logging:
+
+Possible destinations for log messages are:
+
+Console
+Monitor
+Memory buffer
+Syslog server
+SNMP trap
+Flash memory
+
+Syslog is a method of collecting messages from devices and sending them to a server running a syslog daemon. 
+
+Logging to a central syslog server helps in aggregation of logs and alerts. 
+Cisco devices can send their log messages to a UNIX-style syslog service.
+A syslog service accepts messages and stores them in files, or prints them according to a simple configuration file. 
+This form of logging provides protected long-term storage for logs. The following is a syslog message that was generated when a UDP connection slot between two hosts was deleted.
+
+Network devices can produce huge amounts of logs. 
+
+SIEM is a technology that can make the task of collecting, correlating, and acting on the information that is provided by the logs much easier. 
+SIEM technology provides real-time analysis of security alerts that are generated by network devices.

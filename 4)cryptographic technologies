@@ -12,3 +12,102 @@ Origin Authentication: Ensuring that any messages received were actually sent fr
 
 Non-Repudiation: Ensuring that the original source of a secured message cannot deny having produced the message.
 
+A cipher is an algorithm for performing encryption and decryption. Ciphers are a series of well-defined steps that you can follow as a procedure. Different types of ciphers have proven useful historically.
+
+1) Substitution Ciphers: Substitution ciphers substitute one letter for another.
+
+In their simplest form, substitution ciphers retain the letter frequency of the original message. 
+The cipher that was attributed to Julius Caesar was a substitution cipher. 
+Every day was assigned a different key, and that key was used to adjust the alphabet accordingly. 
+For example, if the key for a certain day was five, then an “A” was moved five letters ahead in the alphabet, resulting in an encoded message that used “F” in place of “A.” “B” was then “G,” “C” was “H,” and so on.
+The next day, the key might be eight, and the process would begin again with “A” now becoming “I,” “B” becoming “J,” and so on.
+One of the drawbacks of substitution ciphers is that if the message is long enough, it may be vulnerable to what is called “frequency analysis,” because it retains the frequency patterns of letters that are found in the original message. Because of this weakness, polyalphabetic ciphers were invented.
+
+
+2) Polyalphabetic Ciphers: Polyalphabetic ciphers are based on substitution, using multiple substitution alphabets. 
+  The famous Vigenère cipher is an example. 
+  That cipher uses a series of different Caesar ciphers that are based on the letters of a keyword. 
+  It is a simple form of polyalphabetic substitution and is therefore invulnerable to frequency analysis.To illustrate how this type of cipher works, suppose that a key of “SECRETKEY” is used to encode “ATTACK AT DAWN.” 
+  The “A” is encoded by looking at the row starting with “S” for the letter in the “A” column. In this case, the “A” is replaced with “S.” Then you look for the row that begins with “E” for the letter “T.” This results in “X” as the second character. 
+  If you continue this encoding method, the message “ATTACK AT DAWN” is encrypted as “SXVRGDKXBSAP.”
+
+
+3) Transposition Ciphers: Transposition ciphers rearrange or permutate letters, instead of replacing them. 
+   Transposition is also known as permutation. An example of this type of cipher takes the message “THE PACKAGE IS DELIVERED” and transposes it to read “DEREVILEDSIEGAKCAPEHT.” 
+   In this example, the key is to reverse the letters. (see RAIL FENCE Cipher)
+   Some modern algorithms, such as DES and 3DES, still use transposition as part of the algorithm.
+   
+4)One-Time Pad: The one-time pad was invented and patented by Gilbert Vernam in 1917 while working at AT&T. 
+  A one-time pad is also known as a Vernam cipher. Vernam's idea was a stream cipher that would apply the XOR operation to plaintext with a key. 
+  Joseph Mauborgne, a captain in the U.S. Army Signal Corps, contributed the idea of using random data as a key. 
+  This combined idea is so significant that the National Security Agency (NSA) has called this patent “perhaps the most important in the history of cryptography.”
+  There are several difficulties inherent in using one-time pads in the real world. The first is the challenge of creating random data. Computers, because they have a mathematical foundation, are incapable of creating truly random data. 
+  Also, if the key is used more than once, it is trivial to break. Key distribution is also challenging.
+
+Hash Algorithms:
+
+Hashing is a mechanism that is used for data integrity assurance.
+Hashing is based on a one-way mathematical function: functions that are relatively easy to compute, but significantly difficult to reverse. 
+Grinding coffee is a good example of a one-way function: it is easy to grind coffee beans, but it is almost impossible to put all the tiny pieces back together to rebuild the original beans.
+
+Data of an arbitrary length is input into the hash function, and the result of the hash function is the fixed-length hash, which is known as the “digest” or “fingerprint.” 
+When the same data is passed through a hash algorithm twice, the output is identical.
+Any small modification to the data produces an entirely different output. 
+This characteristic is often referred to as the avalanche effect. Data is deemed to be authentic if running the data through the hash algorithm produces the expected fingerprint. Since hash algorithms produce a fixed-length output, there are a finite number of possible outputs. 
+It is possible for two different inputs to produce an identical output. They are referred to as hash collisions.
+
+Hashing is similar to the calculation of CRC checksums, but it is much stronger cryptographically. 
+CRCs were designed to detect randomly occurring errors in digital data where hash algorithms were designed to assure data integrity even when data modifications are intentional with the objective to pass fraudulent data as authentic. 
+One primary distinction is the size of the digest produced. 
+CRC checksums are relatively small, often 32 bits. 
+Commonly used hash algorithms produce digests in the range of 128 to 512 bits in length. 
+It is relatively easier for an attacker to find two inputs with identical 32-bit checksum values than it is to find two inputs with identical digests of 128 to 512 bits in length.
+
+Cryptographic Authentication in Action:
+
+The sending device inputs data and the secret key into the hashing algorithm and calculates the fixed-length message authentication code, or fingerprint.
+This authenticated fingerprint is then attached to the message and sent to the receiver. The receiving device removes the fingerprint from the message and uses the received message with its copy of the secret key as input to the same hashing function. 
+If the fingerprint that is calculated is identical to the fingerprint that was received, then data integrity has been verified. Also, the origin of the message is authenticated, because only the sender possesses a copy of the shared secret key. 
+The keyed hash function has ensured the authenticity of the message.
+
+Routeing:  Route authentication use of hashing:
+
+Route authentication using a keyed hash allows the validation of route integrity. 
+If the route information is tampered with during transit, the receiving router upon calculating the keyed hash finds the computed hash to be different from the received hash. 
+Even if an attacker intercepts the route information and injects a new hash after changing the route information, the attempt fails, because the attacker does not know the secret key. 
+Without the secret key, the attacker cannot produce a message authentication code that will be accepted by the receiver.
+
+Comparing Hashing Algorithms:
+
+The three most commonly used cryptographic hash functions are MD5, SHA-1, and SHA-2.
+
+MD5:
+
+The MD5 algorithm is a ubiquitous hashing algorithm that was developed by Ron Rivest. 
+Although MD5 is used in various Internet applications today, it is not recommended for new applications.
+
+
+SHA:
+
+The U.S. NIST developed SHA, the algorithm that is specified in the SHS (Secure Hash Standard). 
+SHA-1 is a revision to SHA that was published in 1994. The revision corrected an unpublished flaw in SHA. 
+Its design is very similar to the Message Digest 4 (MD4) family of hash functions that Ron Rivest developed.
+
+The SHA-1 algorithm takes a message of up to 264 bits in length and produces a 160-bit message digest. 
+The algorithm is slightly slower than MD5, but the larger message digest makes it more secure against brute-force collision and inversion attacks.
+
+
+Secure Hash Algorithm 2 (SHA-2) specifies six SHAs—SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224 and SHA-512/256. 
+When a message of any length up to 264 bits (for SHA-224 and SHA-256) or up to 2128 bits (for SHA-384 and SHA-512) is input to a SHA-2 algorithm, the result is a message digest that ranges in length from 224 to 512 bits, depending on the algorithm. 
+SHA-512 is actually more efficient to implement than SHA-256 on 64-bit computational systems. 
+SHA-512/224 and SHA-512/256 are based on the SHA-512 algorithm, modifying the internal initialization vector and truncating the digest output to 224 bits and 256 bits respectively. 
+They were introduced to allow the use of the SHA-512 algorithm in situations where it is faster than SHA-256 but a smaller digest size is desirable.
+
+The SHA-2 family of hash functions was approved by NIST for use by federal agencies in 2006, for all applications using SHAs. 
+The publication encouraged all federal agencies to stop using SHA-1 for digital signatures, digital time stamping, and other applications that require collision resistance when practical, and it mandated the use of the SHA-2 family of hash functions for these applications after 2010. After 2010, federal agencies used SHA-1 only for the following applications: HMACs, key derivation functions (KDFs), and random number generators (RNGs). 
+This change was triggered in 2005, when security flaws were identified for SHA-1 in theoretical exploits that exposed weaknesses to collision attacks.
+
+
+
+
+

@@ -108,6 +108,120 @@ The publication encouraged all federal agencies to stop using SHA-1 for digital 
 This change was triggered in 2005, when security flaws were identified for SHA-1 in theoretical exploits that exposed weaknesses to collision attacks.
 
 
+###########################################################################################################
+                      ###################     
+                      ### Encryption ####
+                      ###################     
+###########################################################################################################
+
+Encryption is the process of disguising a message in such a way as to hide its original contents. With encryption, the plaintext readable message is converted to ciphertext, which is the unreadable, “disguised” message. 
+Decryption reverses this process.
+Encryption is used to guarantee confidentiality so that only authorized entities can read the original message.
+
+Encryption can provide confidentiality at different network layers, such as the following:
+ a) Encrypt application layer data, such as encrypting email messages with PGP.
+ b) Encrypt session layer data using a protocol such as SSL or TLS.
+ c) Encrypt network layer data using protocols such as those provided in the IPsec protocol suite.
+ d) Encrypt data link layer using MACsec (IEEE 802.1AE) or proprietary link-encrypting devices.
+ 
+ Encryption Algorithms and Keys
+
+A key is a required parameter for encryption algorithms. 
+There are two classes of encryption algorithms, which differ in their use of keys:
+1) Symmetric encryption algorithm: Uses the same key to encrypt and decrypt data
+2) Asymmetric encryption algorithm: Uses different keys to encrypt and decrypt data
+
+###################################################################################
+               ### Cryptanalysis ###
+###################################################################################
+
+Cryptanalysis is the practice of breaking codes to obtain the meaning of encrypted data. 
+An attacker who tries to break an algorithm or encrypted ciphertext may use one of the following attacks:
+
+-Brute-Force Attack: attacker tries every possible key with the decryption algorithm, knowing that eventually one of the keys will work.
+                      All encryption algorithms are vulnerable to this attack.
+                      
+-Ciphertext-Only Attack:
+-Known-Plaintext Attack:
+-Chosen-Plaintext Attack:
+-Birthday Attack:
+-Meet-in-the-Middle:
+
+####################################################################################
+                   Symmetric Encryption Algorithms
+####################################################################################
+
+Symmetric encryption algorithms use the same key for encryption and decryption. 
+Therefore, the sender and the receiver must share the same secret key before communicating securely. 
+The security of a symmetric algorithm rests in the secrecy of the shared key; by obtaining the key, anyone can encrypt and decrypt messages. 
+Symmetric encryption is often called secret-key encryption. 
+Symmetric encryption is the more traditional form of cryptography. 
+The typical key-length range of symmetric encryption algorithms is 40 to 256 bits.
+
+Some of the most widely used symmetric encryption algorithms are:
+
+DES  --56 bit key (64 bit --56 key+8 parity) --block cipher
+3DES --3* 56 -block cipher
+AES --128 ,192,256 -block cipher
+RC4 --128 bit --strem cipher
+
+DES is a symmetric encryption algorithm that usually operates in block mode, in which it encrypts data in 64-bit blocks. 
+The DES algorithm is essentially a sequence of permutations and substitutions of data bits combined with an encryption key. 
+Because DES is based on very simple mathematical functions, it can easily be implemented and accelerated in hardware. 
+DES has a fixed key length. The key is actually 64 bits long, but only 56 bits are used for encryption; the remaining 8 bits are used for parity. 
+The least significant bit of each key byte is used to indicate odd parity.
+
+DES uses two standardized block cipher modes:
+
+- ECB: Serially encrypts each 64-bit plaintext block using the same 56-bit key. 
+  If two identical plaintext blocks are encrypted using the same key, their ciphertext blocks are the same.
+
+
+- CBC: Each 64-bit plaintext block is XORed bitwise with the previous ciphertext block and then is encrypted with the DES key. 
+  Because of this process, the encryption of each block depends on previous blocks. 
+  Encryption of the same 64-bit plaintext block can result in different ciphertext blocks.
+  
+  
+With advances in computer processing power, the original 56-bit DES key became too vulnerable to brute force attacks. 
+One way to increase the DES effective key length, without changing the well-analyzed algorithm itself, is to use the same algorithm with different keys several times in a row. 
+The technique of applying DES three times in a row to a plaintext block is called 3DES. 
+Brute-force attacks on 3DES are considered unfeasible today. 
+Because the basic algorithm has been well tested in the field for more than 35 years, it is considered very trustworthy.
+
+3DES uses a method that is called 3DES-Encrypt-Decrypt-Encrypt (3DES-EDE) to encrypt plaintext. 
+3DES-EDE includes the following steps:
+
+-The message is encrypted using the first 56-bit key, which is known as K1.
+-The data is decrypted using the second 56-bit key, which is known as K2.
+-The data is encrypted again, now using the third 56-bit key, which is known as K3.
+
+
+The 3DES-EDE procedure provides encryption with an effective key length of 168 bits. 
+If the keys K1 and K3 are equal, as in some implementations, then a less secure encryption of 112 bits is achieved. 
+To decrypt the message, the opposite of the 3DES-EDE method is used, using the keys in reverse order.
+
+AES An alternative to DES and 3DES
+
+AES is an iterated block cipher, which means that the initial input block and cipher key undergo multiple transformation cycles before producing output. 
+It is based on the more general Rijndael cipher. 
+Rijndael specifies variable block sizes and key sizes, but AES specifically uses keys with a length of 128, 192, or 256 bits to encrypt 128-bit blocks.
+
+AES was chosen to replace DES and 3DES, because the key length of AES is much stronger than DES, and AES runs faster than 3DES on comparable hardware. 
+AES is more efficient than DES and 3DES on comparable hardware, usually by a factor of five when it is compared with DES. 
+Also, AES is more suitable for high-throughput, low-latency environments, especially if pure software encryption is used.
+
+RC algorithms:
+
+Ron Rivest has authored several encryption algorithms that are designated with an RC followed by an integer.
+Of them, RC4 is the most prevalent today. It is a stream cipher. 
+It can be deployed in many ways, but is most well-known for its use to secure web traffic in SSL and TLS. 
+The algorithm is a variable key-size Vernam stream cipher. It is not considered a one-time pad, because its key is not random. 
+The cipher can be expected to run very quickly in software. 
+It is considered secure, although it can be implemented insecurely, as in Wired Equivalent Privacy (WEP), and new research has begun to expose some weaknesses in RC4.
+
+Many other symmetric algorithms are available, including SEAL, IDEA, Blowfish, Twofish, and Serpent.
+
+
 
 
 

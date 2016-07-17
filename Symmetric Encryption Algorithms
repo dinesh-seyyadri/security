@@ -1,0 +1,17 @@
+Symmetric encryption algorithms use the same key for encryption and decryption.
+Therefore, the sender and the receiver must share the same secret key before communicating securely. 
+The security of a symmetric algorithm rests in the secrecy of the shared key; by obtaining the key, anyone can encrypt and decrypt messages. 
+Symmetric encryption is often called secret-key encryption. Symmetric encryption is the more traditional form of cryptography. 
+The typical key-length range of symmetric encryption algorithms is 40 to 256 bits.
+
+Because symmetric algorithms are usually quite fast, they are often used for wire-speed encryption in data networks.
+Symmetric algorithms are based on simple mathematical operations and can easily be accelerated by hardware.
+Because of their speed, you can use symmetric algorithms for bulk encryption when data privacy is required, such as to protect a VPN
+
+On the other hand, key management can be a challenge. 
+The communicating parties must obtain a common secret key before any encryption can occur. 
+Therefore, the security of any cryptographic system depends greatly on the security of the key management methods.
+
+Symmetric encryption algorithms are sometimes referred to as private-key encryption. 
+Examples of symmetric encryption algorithms are DES, 3DES, AES, IDEA, RC2/4/5/6, and Blowfish.
+Because of their speed, symmetric algorithms are frequently used for encryption services, with additional key management algorithms providing secure key exchange.

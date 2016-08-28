@@ -1,0 +1,31 @@
+Asymmetric algorithms utilize a pair of keys for encryption and decryption. 
+The paired keys are intimately related and are generated together. 
+Most commonly, an entity with a key pair will share one of the keys (the public key) and it will keep the other key in complete secrecy 
+(the private key). The private key cannot, in any reasonable amount of time, be calculated from the public key. 
+Data that is encrypted with the private key requires the public key to decrypt. 
+Vice versa, data that is encrypted with the public key requires the private key to decrypt. 
+Asymmetric encryption is also known as public key encryption.
+
+typical key length range for asymmetric algorithms is 512 to 4096 bits
+
+You cannot directly compare the key length of asymmetric and symmetric algorithms,
+because the underlying design of the two algorithm families differs greatly.
+
+Examples of asymmetric cryptographic algorithms include RSA, DSA, ElGamal, and elliptic curve algorithms.
+
+RSA is one of the most common asymmetric algorithms. Ron Rivest, Adi Shamir, and Len Adleman invented the RSA algorithm in 1977. It was a patented public-key algorithm.
+patent expired in September 2000, so the algorithm is now in the public domain
+Of all the public-key algorithms that have been proposed over the years, RSA is by far the easiest to understand and implement.
+
+Current RSA keys are usually 1024 to 4096 bits long
+
+The RSA algorithm is based on the fact that each entity has two keys, a public key and a private key.
+The public key can be published and given away, but the private key must be kept secret. 
+It is not possible to determine, using any computationally feasible algorithm, the private key from the public key, and vice versa. 
+What one of the keys encrypts, the other key decrypts, and vice versa.
+
+
+Asymmetric algorithms are substantially slower than symmetric algorithms. 
+Their design is based on computational problems, such as factoring extremely large numbers or computing discrete logarithms of extremely large numbers. 
+Because they lack speed, asymmetric algorithms are typically used in low-volume cryptographic mechanisms, such as digital signatures and key exchange. 
+However, the key management of asymmetric algorithms tends to be simpler than symmetric algorithms, because usually one of the two encryption or decryption keys can be made public.

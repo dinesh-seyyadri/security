@@ -21,3 +21,23 @@ Since they matched, the Pod-Rtr accepted the password and granted access to priv
 on Kali linux:
 
 openssl passwd -1 -salt yvQJ cisco
+
+
+Task:
+
+root@outside-srv:~# cat secrets.txt
+FirstSecret:$1$yvQJ$SK2/1KIZXwUY/7/P36C4I0
+
+in Kali 
+John secret.txt
+
+
+enable secret Cisco1
+
+john --wordlist=words.txt --rules secrets.txt
+
+
+
+
+
+

@@ -29,3 +29,30 @@ Asymmetric algorithms are substantially slower than symmetric algorithms.
 Their design is based on computational problems, such as factoring extremely large numbers or computing discrete logarithms of extremely large numbers. 
 Because they lack speed, asymmetric algorithms are typically used in low-volume cryptographic mechanisms, such as digital signatures and key exchange. 
 However, the key management of asymmetric algorithms tends to be simpler than symmetric algorithms, because usually one of the two encryption or decryption keys can be made public.
+
+
+SSH 
+
+two versions sshv1 and sshv2
+
+
+SSHv1 uses a connection process as follows:
+
+a) The client connects to the server and the server presents the client with its public key.
+
+b) The client and server negotiate the security transforms. 
+The two sides agree to a mutually supported symmetric encryption algorithm. 
+This negotiation occurs in the clear. 
+A party that intercepts the communication will be aware of the encryption algorithm that is agreed upon.
+
+c) The client constructs a session key of the appropriate length to support the agreed-upon encryption algorithm. 
+The client encrypts the session key with the server’s public key. 
+Only the server has the appropriate private key that can decrypt the session key.
+
+d) The client sends the encrypted session key to the server. 
+The server decrypts the session key using its private key. 
+At this point, both the client and the server have the shared session key. 
+That key is not available to any other systems. From this point on, the session between the client and server is encrypted using a symmetric encryption algorithm.
+
+e) With privacy in place, user authentication ensues. The user’s credentials and all other data are protected.
+

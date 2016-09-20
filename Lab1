@@ -37,7 +37,24 @@ enable secret Cisco1
 john --wordlist=words.txt --rules secrets.txt
 
 
+username helpdesk password Cisco123!
 
+caine and able
+
+openssl enc -aes-128-cbc -in artofwar.txt -out artofwar.crypt
+
+openssl enc -d -aes-128-cbc -in artofwar.crypt -out artofwar3.txt
+
+diff artofwar3.txt artofwar1.txt
+
+
+RSA public/private key pair :
+
+conf t
+ip domain-name pod.public
+crypto key generate rsa
+
+#debug ip ssh
 
 
 

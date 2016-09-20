@@ -1,0 +1,179 @@
+The idea of encrypting a file with your private key is a step toward digital signatures.
+Anyone who decrypts the file with your public key knows that you were the one who encrypted it. 
+But, since asymmetric encryption is computationally expensive, this is not optimal. 
+Digital signatures leave the original data unencrypted. It does not require expensive decryption to simply read the signed documents. 
+In contrast, digital signatures use a hash algorithm to produce a much smaller fingerprint of the original data. 
+This fingerprint is then encrypted with the signer’s private key. 
+The document and the signature are delivered together. 
+The digital signature is validated by taking the document and running it through the hash algorithm to produce its fingerprint. 
+The signature is then decrypted with the sender’s public key. 
+If the decrypted signature and the computed hash match, then the document is identical to what was originally signed by the signer.
+
+Usually asymmetric algorithms, such as RSA and DSA, are used for digital signatures.
+
+The signature process is as follows:
+  1) The signer makes a hash, or fingerprint, of the document, which uniquely identifies the document and all its contents.
+  2) The signer encrypts the hash with only the private key of the signer.
+  3) The encrypted hash, which is known as the signature, is appended to the document.
+
+
+The verification process works as follows:
+ 1) The verifier obtains the public key of the signer.
+ 2) The verifier decrypts the signature using the public key of the signer. This step unveils the assumed hash value of the signer.
+ 3) The verifier makes a hash of the received document, without its signature, and compares this hash to the decrypted signature hash. 
+ If the hashes match, the document is authentic. 
+ The match means that the document has been signed by the assumed signer and has not changed since it was signed.
+ 
+ 
+Digital signatures provide three basic security services in secure communications:
+
+1) Authenticity of digitally signed data: Digital signatures authenticate a source, proving that a certain party has seen and has signed the data in question.
+2) Integrity of digitally signed data: Digital signatures guarantee that the data has not changed from the time it was signed.
+3) Nonrepudiation of the transaction: The recipient can take the data to a third party, and the third party accepts the digital signature as a proof that this data exchange did take place. The signing party cannot repudiate that it has signed the data.
+
+To achieve these goals, digital signatures have the following properties:
+
+1) The signature is authentic: The signature convinces the recipient of the document that the signer signed the document.
+2) The signature is not forgeable: The signature is proof that the signer, and no one else, signed the document.
+3) The signature is not reusable: The signature is a part of the document and cannot be moved to a different document.
+4) The signature is unalterable: After a document is signed, it cannot be altered.
+5) The signature cannot be repudiated: Signers cannot claim later that they did not sign it.
+
+The RSA algorithm is currently the most common method for signature generation, and is used widely in in that role by e-commerce systems and interactive purchasing systems
+
+PKI OVERVIEW: 
+
+A substantial challenge with both asymmetric encryption and digital certificates is the secure distribution of public keys.
+How do you know that you have the real public key of the other system and not the public key of an attacker who is trying to deceive you? 
+This is where public key infrastructure comes to play. 
+Entities enroll with a PKI and receive identity certificates that are signed by a certificate authority. 
+Among the identity information included in the certificate is the entity's public key. 
+The certificate authority’s digital signature on the identity certificate validates that the included public key is the real public key belonging to the associated entity. 
+A system will only accept the signed digital certificate if it trusts the CA. The CA plays the role of a trusted third party.
+
+
+PKI Terminology and Components:
+
+CA: The trusted third party that signs the public keys of entities in a PKI-based system.
+Certificate: A document, which in essence binds together the name of the entity and its public key, which has been signed by the CA.
+
+Many vendors offer CA servers as a managed service or as an end-user product: VeriSign, Entrust Technologies, and GoDaddy are some examples.
+Organizations may also implement private PKIs using Microsoft Server or Open SSL
+
+Currently, digital identity certificates use the X.509 version 3 structure:
+
+Certificate
+Version
+Serial Number
+Algorithm ID
+Issuer
+Validity
+Not Before
+Not After
+Subject
+Subject Public Key Info
+Public Key Algorithm
+Subject Public Key
+Issuer Unique Identifier (optional)
+Subject Unique Identifier (optional)
+Extensions (optional)
+...
+Certificate Signature Algorithm
+Certificate Signature
+
+X.509 is an ITU-T standard for PKI which specifies, among other things, the formats for identity certificates and certificate validation algorithms.
+
+PKI Operations:
+
+A PKI facilitates highly scalable trust relationships. 
+PKIs can be further scaled using a hierarchy of CAs with a root CA signing the identity certificates of subordinate CAs. 
+For simplicity, this discussion will present a single CA PKI.
+
+A PKI facilitates highly scalable trust relationships. 
+PKIs can be further scaled using a hierarchy of CAs with a root CA signing the identity certificates of subordinate CAs. 
+For simplicity, this discussion will present a single CA PKI.
+
+The PKI is an example of a trusted third-party system.
+
+The basis of the trust is the CA’s public key. All systems that leverage the PKI must have the CA’s public key. 
+They get this from the CA’s own identity certificate. 
+The CA’s own identity certificate is unique as it is self-signed. For many systems, the distribution of CA certificates is handled automatically. For example, commercial web browsers come with a set of public CA root certificates pre-installed, and organizations push their private CA root certificate to clients through various software distribution methods. 
+But in some instances, particularly when a system needs to enroll with a PKI to obtain an identity certificate for itself, the CA certificate must be requested and installed manually. 
+When this is done, it is advisable to use an out-of-band method to validate the certificate.
+For example, the CA administrator can be contacted via the phone to obtain the fingerprint of the valid CA identity certificate. 
+The goal is to verify that the CA certificate that was received was the authentic CA certificate containing the authentic CA public key and not a certificate that is provided by an attacker containing the attacker’s public key.
+
+Certificate Enrollment:
+
+To obtain an identity certificate, a system administrator will enroll with the PKI. 
+The first step is to obtain the CA’s identity certificate. The next step is to create a CSR (PKCS #10). 
+The CSR contains the identity information that is associated with the enrolling system. 
+This can include data such as the system name, the organization to which the system belongs, and location information. 
+Most importantly, the enrolling system’s public key is included with the CSR.
+Depending on the circumstance, the CA administrator may need to contact the enroller and verify the data before the request can be approved. 
+If the request is approved, the CA will take the identity data from the CSR, and add in the CA-specified data, such as the certificate serial number, the validity dates, and the signature algorithm, to complete the X.509v3 certificate structure. 
+It will then sign the certificate by hashing the certificate data and encrypting the hash with its private key. 
+The signed certificate is then made available to the enrolling system.
+
+It is important to understand that the CA is not involved in the certificate validation process. 
+Systems that need to validate the identity certificate of other systems will have the root CA certificate.
+They will use the CA’s public key to validate the signature on any certificate they receive. 
+It is also important to understand that the certificate does not so much identify the entity of the peer. 
+It only identifies the valid public key of the peer. 
+To be sure that the peer is actually the entity that is identified in the certificate, a system must challenge the peer to prove that it has the private key that is associated with the validated public key. 
+For example, a message can be encrypted with the validated public key and sent to the peer. If the peer can successfully decrypt the message, then the peer must have the associated private key and is therefore the system that is identified by the digital certificate.
+
+Certificate Revocation:
+
+Digital certificates can be revoked if keys are thought to be compromised, or if the business use of the certificate calls for revocation (for example, VPN access privileges have been terminated). 
+If keys are thought to be compromised, generating new keys forces the creation of a new digital certificate, rendering the old certificate invalid and a candidate for revocation. 
+On the other hand, a consultant might obtain a digital certificate for VPN access into the corporate network only for the duration of the contract.
+Certificate revocation is also a centralized function, providing “push” and “pull” methods to obtain a list of revoked certificates—frequently or on demand—from a centralized entity.
+In some instances, the CA server acts as the issuer of certificate revocation information.
+
+Certificate Revocation Check Methods:
+
+Several methods can be used to check for certificate revocation. Currently, the most prevalent methods are CRLs and OCSP. The table lists benefits and limitations of each protocol:
+ a) CRL 
+ 
+A list of revoked certificate serial numbers is distributed as a time-stamped, CA-signed file.
+PKI entities regularly poll the CRL repository to receive the current CRL.
+There is a window of opportunity for attackers while the new CRL is not yet propagat
+
+ b)OCSP
+
+Revocation information is immediately pushed to an online database.
+Entities can query the OCSP server at any time to check for validity of the received certificate.
+
+
+Use case for PKI :SSL/TLS
+
+SSL/TLS is the most widely visible use of certificate-based peer authentication. 
+SSL was developed by Netscape in the 1990s to provide secure transactions between web browsers and web servers in support of commerce over the Internet.
+SSL became a de facto standard, but it has since been made obsolete by TLS which is standardized by the IETF. 
+TLS version 1.0 was defined in RFC 2246 in 1999 and provided a standards-based upgrade to SSL version 3.0. 
+TLS continues to evolve with TLS 1.3 in draft as of February 2015. 
+Modern systems implement TLS, but the term SSL is often used interchangeably by IT professionals.
+TLS uses PKI to authenticate peer systems and public key cryptography to facilitate the exchange of session keys that are used to encrypt the SSL session. 
+Many applications use TLS to provide authentication and encryption. 
+The most widely used application is HTTPS.
+Other well-known applications that were using poor authentication and no encryption were modified to be transported within TLS. 
+Examples include SMTP, LDAP, and POP3.
+
+SSL and TLS support a combination of cryptographic algorithms to provide the same services at various levels of risk. 
+The figure illustrates the cryptographic architecture of SSL and TLS, based on the negotiation process of the protocol.
+
+In a modern cryptographic system, key generation is usually automated and not left to the end user. 
+The use of effective randomization is needed to ensure that all keys are equally likely to be generated, so that the attacker cannot predict which keys are more likely to be used. 
+Almost all cryptographic algorithms have some weak keys that should not be used. With the help of key verification procedures, the system can reject weak keys when they occur and repeat the key generation process.
+Another important component in key management is key storage. For example, on a modern multiuser operating system that uses cryptography, a key can be stored in memory. 
+This presents a possible problem when that memory is swapped to the disk, because a Trojan horse program that is installed on the PC of a user could then have access to the private keys of that user.
+The key management procedures should also provide a secure key exchange mechanism, which allows secure agreement on the keying material with the other party, probably over an untrusted medium.
+The last elements of good key management are key revocation and key destruction. 
+Key revocation notifies all interested parties that a certain key has been compromised and should no longer be used. 
+Key destruction erases old keys in such a manner that malicious attackers cannot recover them.
+
+
+
+  
+  

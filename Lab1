@@ -1,0 +1,23 @@
+md5sum, sha1sum, sha256sum, sha384sum,  sha512sum. 
+
+show run | section enable
+
+Note the following:
+
+You know that the value of the enable secret is cisco, because you just used it to access privilege level 15. 
+But the Pod-Rtr does not know what the enable secret value actually is. Remember, hashes are one-way transforms. 
+The Pod-Rtr knows the resulting hash, but not the original secret string.
+Borrowing from the BSD notation that is used for passwords that are stored in /etc/shadow, there are three components to the secret, 
+each preceded by a $.
+
+The $1 specifies that MD5 transformation is used. This is the only transform supported by IOS. *nix systems support other methods.
+The $yvQJ is a random four-character salt phrase that was generated when the enable secret was originally configured.
+The $SK2/1KIZXwUY/7/P36C4I0 is the MD5 hash of the secret cisco combined with the salt yvQJ.
+
+As stated above, the Rtr does not know what the enable secret is. 
+It just knows that the enable secret salted with yvQJ is SK2/1KIZXwUY/7/P36C4I0. When you entered the string cisco at the password prompt, the Pod-Rtr took the string that you entered, combined it with the yvQJ salt phrase, performed the MD5 transform, and compared the result to the stored hash. 
+Since they matched, the Pod-Rtr accepted the password and granted access to privileged mode.
+
+on Kali linux:
+
+openssl passwd -1 -salt yvQJ cisco

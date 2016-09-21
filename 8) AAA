@@ -1,0 +1,104 @@
+AAA :
+
+Authentication -who u are
+Authorization - What you are allowed to do
+Accounting - log entries and audit trail
+
+
+AAA databases
+AAA protocols
+AAA Servers
+
+must know -- uses SSH,IOS privilege levels ,Role based CLI
+
+AAA stands for authentication, authorization, and accounting. 
+ Authentication is about determining identity. 
+ Authorization is about defining what individual or groups of identities are allowed to do. 
+ Accounting is about keeping track of what individual identities have done.
+
+If authentication requires two things, it is called two factor authentication. 
+An example of two factor authentication is a token generating fob that is paired with a PIN. 
+To authenticate, the user must provide the current token appearing on the fob (something that they have) along with their PIN (something that they know).
+
+AAA can be associated with network access and with administrative access. 
+For example, using a remote access VPN client to connect to the corporate network from other locations is considered network access.
+Generally the user is challenged for credentials to log on to the VPN. This logon process is authentication. 
+Depending on the user's department, the user may be allowed or denied access to certain resources via the VPN. 
+This process is authorization. Lastly, details of the session, such as dates and times, remote IP address, and systems accessed may be logged. This process is accounting. 
+Similarly, a staff member of the IT department may log into the router to make a configuration change.
+This would be considered administrative access. Again, the IT staff member must authenticate to the router. 
+Depending on his position, he may have limited access to configuration commands.
+For example, members of the network operations team may be allowed to modify SNMP configuration on the router, but not modify routing protocol configuration. 
+This determination is made by the authorization process. Finally, the details of the administrative session may be logged. 
+The details may include session start and stop times and commands that were entered.
+
+
+AAA Databases:
+
+Local and Centralized databases are available for AAA
+
+AAA data must be stored somewhere. 
+The simplest implementation is to use the local database on individual network devices. 
+This means AAA authentication and authorization data are stored directly in the device’s configuration. 
+While simple, using the local AAA database does not scale well. 
+Username and password definitions as well as authorization specifications must be configured and maintained on all network devices. 
+Imagine password management where passwords must be updated independently on hundreds or thousands of devices. 
+Also, understand that configuring usernames and passwords is an administrative act. 
+When a remote access VPN system is configured with local AAA,, a user does not normally select their password. 
+Instead their password is assigned by an administrator. 
+Another shortcoming of local AAA is that it does not support accounting. 
+AAA accounting data can build up very quickly and network devices simply don’t have enough persistent storage to support local AAA accounting.
+
+
+
+In all but the smallest deployments, centralized AAA is preferred over local AAA.
+With centralized AAA, configuration and maintenance of AAA policy is much simpler. 
+User IDs are defined and managed centrally and made available all devices in the network. 
+Similarly, authorization policy can be defined centrally and made available to all devices in the network. 
+Beyond the initial configuration, maintenance is also simplified. 
+If an authorization policy is changed, the change is inherited by all devices. 
+Centralized AAA also facilitates accounting. The accounting records from all devices are sent to centralized repositories.
+Auditing AAA records is simplified when the records are all consolidated in a central repository.
+
+AAA protocols:
+
+AAA protocols allow individual network devices to communicate with the centralized AAA resources
+two AAA protocols  RADIUS and TACACS+
+
+RADIUS:
+
+A RADIUS server listens on either UDP 1645 (legacy) or 1812 for authentication and authorization and either UDP 1646 (legacy) or 1813 for accounting.
+RADIUS obfuscates passwords that are transmitted between the client and server using a shared secret key and MD5 hashing; however, the rest of the data is sent in clear text.
+
+TACACS: developed by Cisco
+TACACS+ servers listen on TCP port 49. 
+All data that is transferred between TACACS+ clients and servers is encrypted on a per session basis utilizing session data and a shared secret to derive per session encryption keys.
+
+
+A significant difference between RADIUS and TACACS+ is how they separate the authentication, authorization, and accounting processes.
+RADIUS combines authentication and authorization together in a single process. 
+TACACS+ separates all three aspects of AAA into individual processes. 
+When a RADIUS client makes an access request, it receives all authorization specifications from the RADIUS server at the time of authentication. 
+A TACACS+ client can make realtime authorization requests for an authenticated user or system after the authentication process has completed. 
+This behavior makes TACACS+ more flexible with administrative access authorization. 
+The AAA client can request authorization requests on a per-command basis as the administrator enters the commands. 
+Using TACACS+, per-command authorization is often paired with per-command accounting. 
+The two together provide the capability for very detailed authorization models and very robust accounting records. 
+There are advantages and disadvantages that are associated with both protocols. 
+Often, RADIUS is used for AAA associated with user access to network resources and TACACS+ is used for AAA associated with administrative access to network devices.
+
+AAA Servers:
+
+AAA servers facilitate centralized resources for authentication databases, authorization policy configurations, and accounting records. 
+Cisco offers two AAA servers for the enterprise market: Cisco Secure Access Control Server (ACS), and the Cisco ISE.
+Network devices consult the AAA servers for AAA policies. 
+The AAA servers may consult other systems for certain aspects of the AAA policy. 
+The most common example is consulting an enterprise user ID repository, such as Active Directory or LDAP. 
+Maintaining multiple user databases with duplication between the databases is not an optimal situation.
+Both ACS and ISE can consult several user repositories for user authentication, including Active Directory, LDAP, RADIUS and RSA token servers. 
+Both ACS and ISE can also leverage data from the user repository, such as group membership, when making authorization policy decisions.
+
+Cisco Secure ACS is a robust AAA server offering both TACACS+ and RADIUS services in one system. 
+With ACS, an organization can centralize both user network access policies and network device administrative access policies in one server.
+
+Cisco ISE is a next-generation identity management system that adds features such as profiling, posture assessment, and centralized web authentication.

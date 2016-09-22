@@ -102,3 +102,205 @@ Cisco Secure ACS is a robust AAA server offering both TACACS+ and RADIUS service
 With ACS, an organization can centralize both user network access policies and network device administrative access policies in one server.
 
 Cisco ISE is a next-generation identity management system that adds features such as profiling, posture assessment, and centralized web authentication.
+
+
+Before learning how to configure AAA for administrative access, you need to learn how to configure SSH access to an IOS device vty lines.
+#########config###########
+Router(config)#hostname example-rtr
+example-rtr(config)#ip domain-name example.com
+example-rtr(config)#crypto key generate rsa general-keys modulus 1024
+The name for the keys will be: example-rtr.example.com
+% The key modulus size is 1024 bits
+% Generating 1024 bit RSA keys, keys will be non-exportable...
+[OK] (elapsed time was 0 seconds)
+example-rtr(config)#username admin secret Admin$Secret
+example-rtr(config)#line vty 0 4
+example-rtr(config-line)#login local   
+example-rtr(config-line)#transport input ssh
+
+#############
+
+privilege level:
+
+A common method of defining authorization policy for administrative access is to use privilege levels.
+
+Cisco IOS devices and the Cisco ASA support privilege levels 0 through 15. 
+Configuration and behavior of privilege levels are similar between Cisco IOS and Cisco ASA, but there are some differences in the details.
+
+More privilege levels can be defined between level 1 and level 15.
+Commands can be assigned to different privilege levels. 
+When you are logged in at a certain privilege level, you have access to all commands at that privilege level and below.
+Since privilege level 15 is the highest privilege level, an administrator at privilege level 15 has access to all commands. 
+The privilege level of a command or a group of commands is set with the privilege command. 
+For example, the following commands set the privilege levels of several commands. 
+They set to privilege level 7, respectively, the show running-config and configure terminal commands in exec mode, the interface command in global configuration mode and all forms of the ip command in interface configuration mode:
+
+router(config)#privilege exec level 7 show running-config
+router(config)#privilege exec level 7 configure terminal
+router(config)#privilege configure level 7 interface
+router(config)#privilege interface all level 7 ip
+
+
+router(config)# enable secret level 7 Level7Secret
+router(config)# exit
+router# enable 7
+password: Level7Secret
+router# show privilege
+Current privilege level is 7
+
+Note that the enable command was issued with the privilege level (7) as an argument.
+The default argument to the enable command is 15. 
+Therefore enable and enable 15 are equivalent commands. 
+They request access to the highest privilege level and it is granted if the password associated with level 15 is provided. 
+Back to the example, with privilege level 7 defined as above, and the administrator’s current privilege level set to 7, they cannot execute level 15 commands, such as debug. 
+But they can use configure terminal to reach global configuration mode.
+
+Router#debug aaa authentication
+       ^
+% Invalid input detected at '^' marker.
+Router#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+Router(config)#
+
+
+When in global configuration mode, their command set is limited. For example, they cannot configure routing protocols. 
+They can, however, use the interface command to reach interface configuration mode.
+
+Router(config)#router eigrp 100
+              ^
+% Invalid input detected at '^' marker.
+Router(config)#interface gi0/2
+Router(config-if)#
+
+Router(config-if)#?
+Interface configuration commands:
+  default  Set a command to its defaults
+  exit     Exit from interface configuration mode
+  help     Description of the interactive help system
+  ip       Interface Internet Protocol config commands
+  no       Negate a command or set its defaults
+  
+  
+  Router(config-if)#ip ?       
+Interface IP configuration subcommands:
+  access-group        Specify access control for packets
+  accounting          Enable IP accounting on this interface
+  address             Set the IP address of an interface
+<…Many Commands Omitted…>
+  wccp                WCCP IPv4 interface commands
+Router(config-if)#ip address 10.10.1.1 255.255.255.0
+
+
+
+Implementing Local AAA Authentication and Authorization:
+
+
+Another way to control access to privilege levels is to enable AAA on the device, and use local authentication and authorization.
+
+The aaa new-model command enables AAA features, and the aaa authentication, aaa authorization, and aaa accounting commands define those features
+
+aaa authentication login {default | list-name} method1 [method2 ...]
+
+aaa authorization exec {default | list-name} method1 [method2 ...]
+
+username name [privilege level] [secret {0| 5| password}]
+
+Router(config)#aaa new-model
+Router(config)#aaa authentication login default local
+Router(config)#aaa authorization exec default local
+Router(config)#username helpdesk privilege 1 secret hdPass
+Router(config)#username adminjr privilege 7 secret jrPass
+Router(config)#username adminsr privilege 15 secret srPass
+Router(config)#enable secret secretPass
+
+
+The first command enables AAA. Until the aaa new-model command is entered, the AAA authentication, authorization, and accounting commands are not available. 
+After aaa new-model, the next two commands state that, by default, the vty lines will use the local database for user authentication and EXEC access authorization decisions.
+
+Authorization with Role-Based CLI :
+
+Administrative authorization that is based on privilege levels works as long as there is a clear hierarchy.
+This can be limiting. Often, there is a need to authorize administrative access based on an administrator’s role. 
+For example, the network operations team should be able to configure SNMP, the routing team should be able to configure OSPF, and the VPN team should be able to configure crypto features, but none should be able to configure the features that are assigned to other teams.
+Role-based CLI offers a solution when a hierarchical privilege level system will not suffice.Up to 15 other views can be defined. 
+Note :AAA new model must be enabled.
+
+Rtr-A#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-A(config)#enable secret Cisco123!
+Rtr-A(config)#parser view VPN-Admin
+Rtr-A(config-view)#secret VPN$Pwd
+Rtr-A(config-view)#commands exec include all show
+Rtr-A(config-view)#commands exec include all debug crypto
+Rtr-A(config-view)#commands exec include all no debug
+Rtr-A(config-view)#commands exec include all undebug
+Rtr-A(config-view)#commands exec include configure terminal
+Rtr-A(config-view)#commands configure include all crypto
+Rtr-A(config-view)#commands configure include all interface
+Rtr-A(config-view)#commands configure include all ip access-list
+Rtr-A(config-view)#commands configure include ip local pool               
+Rtr-A(config-view)#end
+
+Rtr-A#enable view VPN-Admin
+Password:VPN$Pwd
+Rtr-A#show parser view
+Current view is 'VPN-Admin'
+
+Rtr-A#show ?
+  aaa                       Show AAA values
+  access-expression         List access expression
+  access-lists              List access lists
+<...Many Lines Omitted...>
+  zone-pair                 Zone pair information
+Rtr-A#debug ?
+  crypto  Cryptographic subsystem
+  
+  
+  Rtr-A#?
+Exec commands:
+  configure  Enter configuration mode
+  debug      Debugging functions (see also 'undebug')
+  enable     Turn on privileged commands
+  exit       Exit from the EXEC
+  no         Disable debugging functions
+  show       Show running system information
+  undebug    Disable debugging functions (see also 'debug')
+  
+  tr-A(config)#crypto isakmp policy 10
+Rtr-A(config-isakmp)#?
+ISAKMP commands:
+  authentication  Set authentication method for protection suite
+  default         Set a command to its defaults
+  encryption      Set encryption algorithm for protection suite
+  exit            Exit from ISAKMP protection suite configuration mode
+  group           Set the Diffie-Hellman group
+  hash            Set hash algorithm for protection suite
+  lifetime        Set lifetime for ISAKMP security association
+  no              Negate a command or set its defaults
+  
+  
+
+
+network device Tacacs+ configuration:
+
+Router(config)#aaa new-model
+Router(config)#tacacs server server1
+Router(config-server-tacacs)#address ipv4 172.16.10.10
+Router(config-server-tacacs)#key SecretKeyString
+Router(config-server-tacacs)#exit
+Router(config)#
+
+
+Router(config)#aaa authentication login default group tacacs+ local
+Router(config)#aaa authorization exec default group tacacs+ local
+Router(config)#username helpdesk privilege 1 secret hdPass
+Router(config)#username adminjr privilege 7 secret jrPass
+Router(config)#username adminsr privilege 15 secret srPass
+Router(config)#enable secret secretPass
+
+Router(config)#aaa authorization commands 15 default group tacacs+ local      
+Router(config)#aaa authorization config-commands
+
+
+Router(config)#aaa accounting exec default start-stop group tacacs+
+Router(config)#aaa accounting commands 15 default stop-only group tacacs+

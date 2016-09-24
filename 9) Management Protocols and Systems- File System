@@ -71,3 +71,40 @@ S: Designates that this is a digitally signed image
 P: Designates that this is a production image. The second character may also be an S, indicating a special image which is not intended for general deployment.
 A: Designates the key version. Signing keys can be revoked. When the time comes for the signing key to be replaced, this character will be incremented alphabetically. The second signing key version will be designated with a B.
 
+
+IOS Resilient Configuration:
+If attackers can gain administrative access to a router via an SSH or a Telnet connection, there are many options open to them. 
+Which options are worst for the victim is debatable, but certainly one drastic option is for the attacker to erase the startup configuration on the device and erase the boot image file and then reload the device. 
+The device will then reload and it does not even have an operating system to boot, let alone a configuration to run once booting completes. 
+The IOS resilient configuration feature is intended to simplify recovery in the event of this type of attack.
+
+OS resilient configuration is enabled with two commands. 
+The first command, secure boot-image, enables the feature and secures the running image.
+The image is still maintained in flash, but it is now protected.
+It is no longer displayed in the flash directory and cannot be deleted via the command line. 
+If flash is reformatted from the command line, all visible files will be erased, but the secured boot image will remain. 
+The second command, secure boot-config, copies the running configuration to the secured storage location. 
+The combination of the secured IOS image and the secured configuration is called the secure bootset.
+
+Rtr-1#dir
+Directory of flash:/
+
+    1  -rw-    38149592  Oct 31 2014 14:23:02 +00:00  c2800nm-advipservicesk9-mz.124-25e.bin
+
+256503808 bytes total (218353664 bytes free)
+Rtr-1#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-1(config)#secure boot-image
+*Oct 31 14:24:44.212: %IOS_RESILIENCE-5-IMAGE_RESIL_ACTIVE: Successfully secured running image
+Rtr-1(config)#secure boot-config
+*Oct 31 14:24:59.768: %IOS_RESILIENCE-5-CONFIG_RESIL_ACTIVE: Successfully secured config archive [flash:.runcfg-20141031-142459.ar]
+Rtr-1(config)#end
+*Oct 31 14:25:08.580: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-1#dir
+Directory of flash:/
+
+No files in directory
+
+256503808 bytes total (218345472 bytes free)
+
+

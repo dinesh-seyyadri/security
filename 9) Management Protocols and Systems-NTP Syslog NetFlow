@@ -1,0 +1,89 @@
+NTP:
+
+Time synchronization is crucial in secure management and reporting. 
+Reviewing log files on multiple devices is common in a security event response process.
+If the clocks on the reporting devices are not consistent with each other, that analysis is much more difficult. 
+In many jurisdictions, log files without valid time stamps are rejected as evidence in criminal prosecution. 
+Also, synchronized clocks in log files are often requirements of security compliance standards. 
+Accurate time status is critical for other aspects of security as well.
+For example, access policies may be time-based and digital certificates have explicit validity periods.
+
+Commands that are useful for verifying NTP status include:
+
+show clock detail, show ntp status, and show ntp associations [detail].
+
+When an IOS system is configured to synchronize with an NTP server, it will assume the role of an NTP server itself.
+It will assume a stratum level that is one higher than the server to which it references.
+As such, a hierarchy of NTP can be implemented within your network devices. 
+The top system in the hierarchy can reference a trusted NTP source, or it can be configured to reference its own battery-backed clock and calendar with the ntp master command.
+
+Syslog:
+
+Syslog was originally developed to provide monitoring and auditing of the UNIX Sendmail service. 
+Other applications began to use the service, and it grew to be the standard logging solution on UNIX and UNIX-like operating systems. 
+Syslog has been adopted by many network device manufacturers, and was standardized in RFC 5424
+
+Generally, when an event occurs that is deemed important by a service, the service generates a syslog message to document the event. 
+On Cisco IOS devices, by default, syslog messages are sent to the console, to the terminal monitor, and to a local buffer. 
+Optimally, syslog messages should be sent to a centralized repository, where they can be aggregated and analyzed.
+A syslog server normally listens on UDP port 514. 
+More recently, servers using TCP have been implemented, providing greater reliability in message delivery.
+
+Syslog defines eight severity levels, 0-7. 
+The lower the number, the more severe the issue. 
+Syslog also defines standard names that are associated with each level:
+
+emergencies	  0
+alerts	      1
+critical	    2
+errors	      3
+warnings	    4
+notifications	5
+informational	6
+debugging	    7
+
+Memory and CPU Threshold Notifications :
+
+If free memory falls to an unusually low level or CPU utilization rises to an unusually high level, the performance of the router is at risk and it can be indicative of an attack against the router or the network.
+
+The Memory Threshold Notifications feature allows you to reserve memory for critical notifications and to configure a router to issue notifications when available memory falls below a specified threshold.
+It provides two ways to mitigate low-memory conditions on a router: notifications can be sent to indicate that free memory has fallen below a configured threshold, and memory can be reserved to ensure that sufficient memory is available to issue critical notifications. 
+Thresholds can be set for processor memory and IO memory with the configuration commands "memory free low-watermark processor" and "memory free low-watermark io". 
+Memory can be reserved to ensure that the memory threshold notifications can be sent using the memory reserve critical configuration command.
+
+The CPU Threshold Notification Feature enables you to define rising and falling thresholds associated with CPU utilization using the process cpu threshold configuration command. 
+The notifications are delivered via SNMP. 
+As such, SNMP must also be configured and an SNMP server must be available to receive the notifications.
+
+
+NetFlow:
+
+NetFlow is a Cisco IOS application that provides statistics on packets flowing through the routing devices in the network.
+It is emerging as a primary network accounting and security technology. NetFlow identifies packet flows for both ingress and egress IP packets.
+NetFlow is completely transparent to the existing network, including end stations and application software and network devices like LAN switches.
+Also, NetFlow capture and export are performed independently on each internetworking device; NetFlow does not need to be operational on each router in the network.
+
+A NetFlow network flow is defined as a unidirectional stream of packets between a given source and destination. 
+The source and destination are each defined by a network-layer IP address and transport-layer source and destination port numbers.
+
+Specifically, a flow is defined by the combination of the following seven key fields:
+
+Source IP address
+Destination IP address
+Source port number
+Destination port number
+Layer 3 protocol type
+ToS
+Input logical interface
+
+These seven key fields define a unique flow. 
+If a packet has one key field different from another packet, it is considered to belong to another flow. 
+A NetFlow report is often compared to a phone bill. A phone bill specifies the phone calls made by the source phone. 
+It does not provide any data on the actual conversations that took place, but it does provide information such as the time of the call and the duration of the call. 
+Analyzing NetFlow data can’t reproduce the actual communication that took place in any individual connections, but it does provide information on which systems communicated with which other systems at which times over which protocols and ports. 
+This data can be used to recognize unusual traffic patterns which may be indicative of a network attack. 
+It can also be used for forensic analysis during and after an attack takes place.
+
+
+
+

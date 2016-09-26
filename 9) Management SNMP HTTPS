@@ -1,0 +1,41 @@
+Network management protocols can be classified in different ways.
+The three common methodologies that are offered by network devices are a CLI, a web-based GUI, and SNMP.
+
+Access to a device’s CLI can be provided by physical connections to the console port or AUX port. 
+This direct serial connection to the device can facilitate an out of band management access method. 
+The CLI can also be reached via networking protocols via a device’s VTY lines. In the past, Telnet was commonly used as a protocol for accessing a network device’s CLI. 
+While the use of Telnet does persist, its popularity is waning due to security concerns. 
+Telnet does not provide any privacy. Not only is the data sent clear text, authentication credentials are also sent clear text. 
+If an attacker can sniff a Telnet session, they can capture the administrator’s username and password.
+Because of this, SSH has become the standard for CLI access via the network. 
+SSH provides the ability for the client to verify the identity of the server (the network device), preventing man-in-the-middle attacks. 
+Also, it protects the authentication credentials and the data using encryption.
+
+Many network devices offer web-based GUIs. 
+The robustness of the GUI varies from platform to platform. On the ASA platform, ASDM, is a very robust platform and is often preferred by administrators over the CLI. 
+On the other hand, IOS devices offer less robust web-based GUIs and administrators often prefer to use the CLI on IOS devices. 
+Some devices offer access to the web-based GUI via either HTTP or HTTPS. 
+Similar to SSH and Telnet, HTTPS is preferred over HTTP from a security perspective. 
+HTTPS allows the client to verify the identity of the network device and it protects the administrator’s credentials and all data passing over the network.
+
+The third option for configuration management across the network is SNMP. 
+SNMP uses the concept of a MIB to store configuration and status information that is associated with a device. 
+MIBs are organized in a tree structure with branches and entries that are specified by an OID. 
+There are three main mechanisms for SNMP communication between a network management system and a network device.
+A network management system can retrieve configuration and status information from a device using SNMP GET operations. 
+It can also update configuration data in a MIB with an SNMP SET operation.
+When the configuration data is modified in the MIB, it is also modified in the device’s running configuration. 
+The third mechanism is the use of an SNMP TRAP operation which allows a network device to send unsolicited updates to a network management station.
+A variation of the TRAP is an INFORM. 
+The device expects the SNMP manager to reply to an INFORM but not a TRAP. Devices will queue and resend unacknowledged INFORMs.
+
+SNMP has evolved through three versions. 
+SNMP versions 1 and 2 do not provide much security. 
+Operations are controlled with community strings.
+Community strings can be read-only or read-write.
+GET requests will be honored if the network management system provides either a valid read-only or read-write community string. 
+SET requests require the network management system to provide a read-write community string.
+With SNMP versions 1 and 2, all data is sent in clear text, including the community strings. 
+If an attacker can sniff the SNMP communications, they can extract the read-write community strings. 
+It is just as dangerous for an attacker to have the read-write community string as it is for an attacker to have the enable secret of an IOS device.
+

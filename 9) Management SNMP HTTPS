@@ -216,3 +216,23 @@ enable secret 5 $1$d66m$hFyY1atvweKfbTCCg0KzY/
 enable password 7 0525091B13494D061408121C0F0900
 
 
+
+The normal process for recovering a password on a Cisco device is to:
+ 1)Power cycle the device.
+ 2)Interrupt the boot sequence to access ROMMON mode.
+ 3)Change the boot register forcing IOS to not require passwords.
+ 4)Continue booting the device.
+ 5)Set the passwords to new and known values.
+ 6)Reset the boot register back to its original value.
+ 
+ 
+ Having this process available means that if an attacker has physical access to the device, they can administer the device. 
+ They could potentially make small changes to the configuration that go unnoticed by administrative staff. 
+ Those small changes could provide large openings for the attacker to further exploit. 
+ The effect of disabling the service password-recovery is pretty simple. It blocks access to ROMMON mode.
+ If passwords are forgotten for a device, it does not mean that the device has to be thrown away. 
+ Instead, there is the option to reset the device to factory defaults.
+ If an attempt to access ROMMON is made during the boot process, it will display a message similar to the following:
+
+PASSWORD RECOVERY IS DISABLED.  
+Do you want to reset the router to factory default configuration and proceed [y/n]

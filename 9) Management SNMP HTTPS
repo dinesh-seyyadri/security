@@ -201,5 +201,18 @@ To control access via SNMPv3, the ACL can be applied either to the SNMP group or
  Example-rtr(config)#snmp-server user nms-user nms-group v3 auth sha auth-pass priv aes 128 priv-pass 99
  
 
+Passwords:
+
+example-rtr(config)#enable password NotRecommended
+example-rtr(config)#enable secret UseStrongSecrets
+example-rtr(config)#do show run | include enable
+enable secret 5 $1$d66m$hFyY1atvweKfbTCCg0KzY/
+enable password NotRecommended
+
+
+example-rtr(config)#service password-encryption
+example-rtr(config)#do show run | include enable
+enable secret 5 $1$d66m$hFyY1atvweKfbTCCg0KzY/
+enable password 7 0525091B13494D061408121C0F0900
 
 

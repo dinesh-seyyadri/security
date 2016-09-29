@@ -1,0 +1,43 @@
+The control plane:
+
+The control plane includes the hardware and software on a network device that supports routing and management.
+Control plane traffic requires device CPU resources. 
+Generally this includes packets that are either destined to the device itself or originating from the device itself, but sometimes traffic passing through the router must sent to the CPU for processing.
+
+
+Protection of the control plane is very important.
+If an attacker can corrupt routing tables, 
+they can redirect traffic to facilitate man-in-the-middle attacks. 
+If an attacker can cause an undue load on the CPU of a device, it can lead to several different types of service failures. 
+The importance of protecting the control plane is evidenced by the existence of an RFC on the subject.
+RFC 6192 discusses the function of the control plane and recommendations on methods that should be employed to protect the control plane.
+
+Control Plane Policing:
+
+CoPP is a Cisco IOS feature which is designed to allow administrators to specify controls over traffic that is directed to a device’s control plane. 
+The goal is to prevent low-priority or unnecessary traffic from overwhelming system resources, which could lead to issues in system performance. 
+CoPP treats the control plane as a separate entity with its own ingress and egress ports. 
+CoPP facilitates the definition of rules to control traffic traversing the control plane’s ingress and egress ports. 
+CoPP not only allows you to specify what traffic is allowed and what traffic is denied on the control plane interfaces, it also provides for rate limiting of allowed traffic. 
+Therefore, expected traffic that is of lower priority can be allowed, but attacks where floods of lower priority traffic are sent to the control plane will be mitigated.
+
+
+Configuration of CoPP is an advanced topic. 
+
+An overview of the configuration elements and process will be provided here. 
+CoPP configures QoS features for the control plane. As such, it is configured with the IOS MQC framework. 
+MQC uses three main concepts: class maps, policy maps, and service policies.
+
+Class maps define characteristics that are used to map traffic to classes. 
+That is, class maps categorize traffic into classes. 
+There are several mechanisms available within class maps, but the most common use is to reference an ACL. 
+If traffic is permitted by the referenced ACL, then traffic belongs to the associated class. 
+When implementing CoPP, you may define class maps with names such as Routing, Management, Normal, and Undesirable.
+
+Policy maps define actions that should be taken on particular classes of traffic. 
+When implementing CoPP, police statements are used within policy maps to specify traffic flow rates and burst rates, along with policy on what to do with conforming and nonconforming traffic.
+
+Finally, to specify where a policy map should be implemented, a service policy statement is used. 
+When implementing CoPP, control-plane configuration mode is reached using the control-plane command in global configuration mode. 
+The service-policy statement is then applied in control-plane configuration mode.
+

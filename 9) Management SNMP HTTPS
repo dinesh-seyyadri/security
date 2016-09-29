@@ -162,3 +162,44 @@ example-rtr(config)#snmp-server user nms-user nms-group v3 auth sha auth-pass pr
 example-rtr(config)#snmp-server host 10.10.10.50 version 3 priv test-user
 
 
+Locking Down Management Access with ACLs:
+
+
+SSH, HTTPS, and SNMPv3 all have security advantages over their alternatives, but there are still risks that are associated with their use. 
+SSH and HTTPS authentication and authorization are based on usernames and passwords. 
+Similarly, SNMPv3 security is based on shared secrets between an SNMP user and the IOS device.
+If an attacker obtains any of this information, they could potentially use it for malicious access to your network resources and configurations.
+
+All three of these protocols can use ACLs to limit the IP addresses from which sessions can be initiated. 
+
+
+Generally a standard IP access list is used for this purpose. 
+The details that can be added with an extended IP access list are not needed. 
+Take SSH for example. The destination IP address is known, it is the device’s own address.
+The protocol is TCP and the destination port is 22. The only concern is the source IP address. 
+Hence, specifying trusted IP addresses with a standard IP access list is sufficient. 
+For example, the following access list will permit connections from hosts on the 172.16.99.0/24 network and the single host 172.16.50.50.
+All other addresses are implicitly denied.
+
+ex:
+
+ Example-rtr(config)#access-list 99 permit 172.16.99.0 0.0.0.255
+ Example-rtr(config)#access-list 99 permit 172.16.50.50
+
+To control access to SSH, the ACL can be applied to the VTY lines with the access-class command:
+
+ Example-rtr(config)#line vty 0 4
+ Example-rtr(config-line)#access-class 99 in
+
+To control access to HTTPS, the ACL can be applied with the ip http access class command:
+
+ Example-rtr(config)#ip http access-class 99
+
+To control access via SNMPv3, the ACL can be applied either to the SNMP group or user:
+
+ Example-rtr(config)#snmp-server group test-group v3 priv write write-view access 99
+ Example-rtr(config)#snmp-server user nms-user nms-group v3 auth sha auth-pass priv aes 128 priv-pass 99
+ 
+
+
+

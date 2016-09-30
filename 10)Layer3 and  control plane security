@@ -147,7 +147,23 @@ Cryptographic authentication enabled
  
  
 
+EIGRP Route Authentication:
 
+
+EIGRP route authentication is configured very similarly to OSPF route authentication, except the SHA-256 HMAC is only available if EIGRP is configured using the named instance construct. 
+Traditionally, EIGRP route authentication involves configuring a key chain and then referencing the key chain in the ip eigrp configuration on the appropriate interfaces. One difference is that with OSPF, the cryptographic algorithm is specified with the key, whereas EIGRP specifies the algorithm on the interface. 
+A sample configuration of EIGRP route authentication follows:
+
+key chain EIGRP-Keys
+ key 1
+  key-string UseStrongerKeysThanThis
+
+interface g0/1
+ ip authentication mode eigrp 10 md5
+ ip authentication key-chain eigrp 10 EIGRP-Keys
+
+
+In the last two commands, the 10 refers to the EIGRP AS number that is already configured on the router.
 
 
 

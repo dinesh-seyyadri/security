@@ -41,3 +41,113 @@ Finally, to specify where a policy map should be implemented, a service policy s
 When implementing CoPP, control-plane configuration mode is reached using the control-plane command in global configuration mode. 
 The service-policy statement is then applied in control-plane configuration mode.
 
+
+
+Control Plane Protection:
+
+CPPr is a feature that is similar to CoPP, but it provides a finer granularity on the control plane.
+Where CoPP treats all traffic to the control plane identically, 
+
+CPPr implements three control plane subinterfaces: 
+
+ a) the host subinterface, 
+ b) the transit subinterface, and 
+ c) the CEF-exception subinterface.
+ 
+  a) the host subinterface:
+  
+  The host subinterface receives all control-plane IP traffic that is directly destined to one of the router interfaces. 
+  Examples of control-plane host IP traffic include tunnel termination traffic, management traffic such as SSH or SNMP, and routing protocols.
+  All host traffic terminates on and is processed by the router.
+
+  b) the transit subinterface:
+  
+  The transit subinterface receives all control-plane IP traffic that is software switched by the route processor. 
+  As a result, packets that are not directly destined to the router itself but rather traffic traversing through the router that is not compatible with Cisco Express Forwarding. 
+  Nonterminating tunnels handled by the router is an example of this type of control-plane traffic.
+
+  c) the CEF-exception subinterface:
+  
+  The CEF-exception subinterface receives all traffic that is either redirected to the processor as a result of a configured input feature in the CEF packet forwarding path. 
+  It also receives traffic that is directly enqueued in the control plane input queue by the interface driver.
+  
+  Configuration of CPPr is very similar to the configuration of CoPP. 
+  It uses the MQC framework, using class-maps to categorize traffic, policy-maps to define actions to take upon different classes of traffic and service-policy statements to define where the policy-maps are applied. 
+  But with CPPr, the service policy statements are applied under three distinct configuration modes: control-plane host, control-plane transit, and control-plane cef-exception. 
+  With CoPP, the service-policy statements are applied in control-plane configuration mode.
+  
+Authenticating Routing Protocols:
+
+
+Routing protocols are used by routers to communicate with each other, exchanging information that is associated with network connectivity, allowing routers to determine the forwarding path to distant networks. 
+Without configuration of routing, routers are only aware of the networks to which they directly connect.
+Routing protocols allow the distribution of this data to immediate neighbors, and the data cascades through those neighbors to all the participating routers in the network.
+
+
+It is a relatively easy for an attacker to run a routing protocol on a workstation. 
+Without the use of authentication, the attacker’s workstation may be accepted as a neighbor by local routers. 
+From this workstation, the attacker can extract potent reconnaissance information that is associated with the network topology.
+It also allows the attacker to inject routes into the routing table, overriding legitimate routes. 
+This information can then cause corruption that can lead to denial of service, and can facilitate man-in-the-middle access attacks.
+
+
+The primary method of preventing unauthorized systems from participating in routing protocols is to configure cryptographic authentication on the routing protocols. 
+With this method, a shared secret is configured between peer routers. 
+When a router generates an update, it generates a keyed hash by running the update and the shared secret key through a hash algorithm.
+A keyed hash is sometimes called a MAC. The router sends the update with the keyed hash appended. 
+The receiving router validates the update by taking the update and the shared secret key to generate a keyed hash. 
+If the computed hash matches what was received with the update, then the receiving router will accept the update. 
+If they do not match, the receiving router will reject the update.
+
+
+Note that this technology depends on the shared secret truly being a secret. 
+If an attacker is aware of the shared secret, the attacker can produce a malicious routing update and use the compromised shared secret to produce a MAC that will be accepted by the receiving router.
+Also understand that this method does not deliver privacy. 
+If an attacker intercepts a routing update, they can read the contents of the update. 
+Also, if an attacker can intercept an update, they will obtain the keyed hash that matches the update. 
+They could then attempt a brute force or dictionary attack to crack the shared secret. 
+The secret must be strong so it can resist these attacks.
+
+
+OSPF Route Authentication:
+
+OSPF route authentication is configured on top of a base OSPF configuration. 
+There are two basic components: defining a key chain, and referencing the key chain on the appropriate OSPF interfaces. 
+
+The following is an example of a key chain configuration:
+
+key chain OSPF-Keys
+ key 1
+  key-string ThisIsASampleKey12345 
+  cryptographic-algorithm hmac-sha-256
+  
+  
+  Using the SHA-256 HMAC algorithm for OSPF authentication is relatively new. 
+  Some devices may not support it. They may only support MD5. 
+  In that case, the command cryptographic-algorithm md5 should be used on the IOS devices. 
+  Send and accept lifetimes may be assigned to keys. By default, the keys are used and accepted forever. 
+  By utilizing send and accept lifetimes, key rotation can be simplified, providing a method to change keys on many routers without breaking any router peering relationships during the process. 
+  One more thing to be aware of is that the key chain name is only locally significant. 
+  Peering routers can use different names for their key chains. The key numbers, however, must match between peering routers.
+
+
+Once the key chain is defined, it must be applied to the appropriate interfaces. An example of this configuration follows.
+
+ interface GigabitEthernet0/0
+ ip ospf authentication key-chain OSPF-Keys
+ 
+The use of authentication can be confirmed with the show ip ospf interface command.
+output:
+....
+....
+Cryptographic authentication enabled
+    Sending SA: Key 1, Algorithm HMAC-SHA-256 – key chain OSPF-Keys
+    
+ ******************************************************************************************************************
+ 
+ 
+
+
+
+
+

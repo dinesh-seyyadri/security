@@ -165,6 +165,48 @@ VLAN Name                             Status    Ports
 ****NOTE:It is important to note that if a given port does not appear in the Ports column of the table, it could be a trunk port carrying multiple VLANs.
 
 
+e)802.1Q Trunking:
+
+A trunk is a point-to-point link between two devices that is capable of carrying multiple VLANs.
+Trunks between switches allow many VLANs to be shared between switches using minimal physical connections.
+Trunks can also be used to connect other types of network devices. 
+For example, a trunk link between a switch and a router allows the router to connect to multiple VLANs and provide Layer 3 gateway functionality for several VLANs over a single physical link. 
+Another example is a server running a hypervisor and supporting several VMs.
+If that server is connected to a switch via a trunk, then individual VMs can be connected to their appropriate VLANs.
+
+
+There are two protocols that are used to implement trunks in Ethernet environments.
+Cisco pioneered trunking technology with a proprietary protocol called ISL. 
+The utility of trunk links was recognized by the industry, and the IEEE ratified the 802.1Q standard for trunking. 
+In modern networks, almost all trunking is implemented with the 802.1Q protocol.
+
+There are two protocols that are used to implement trunks in Ethernet environments.
+Cisco pioneered trunking technology with a proprietary protocol called ISL. 
+The utility of trunk links was recognized by the industry, and the IEEE ratified the 802.1Q standard for trunking.
+In modern networks, almost all trunking is implemented with the 802.1Q protocol.
+
+
+802.1Q introduces a tag into the Ethernet header which specifies the VLAN to which the frame should be contained. 
+The 802.1Q tag is inserted into the frame header when a frame is sent out a trunk port. 
+The 802.1Q tag is stripped from the frame when a receiving switch forwards the frame out an access (nontrunking) port. 
+802.1Q uses the concept of a native VLAN. 
+A trunk port is assigned a native VLAN. Most network devices assign VLAN 1 as the native VLAN on trunks by default. 
+Traffic that is associated with the native VLAN is untagged. 
+That is, on egress, if the frame belongs to the native VLAN of the trunk port, an 802.1Q tag is not imposed. 
+If the frame belongs to any other VLAN, the appropriate 802.1Q tag is imposed. 
+On ingress, if a frame arrives without a tag, it is assigned to the native VLAN.
+If a frame arrives with an 802.1Q tag, it is assigned to the VLAN specified by the tag.
+Care must be taken to configure the same native VLAN on both ends of a trunk link.
+
+
+It is very common to implement a trunk between two devices using a single port on each device.
+But it is also possible to bind multiple physical ports together to form a single logical link, called a port channel. 
+This increases the bandwidth available across the link.
+Trunking can be configured on individual physical ports or it can be configured on logical port channels which bind together multiple physical ports.
+
+
+
+
 
 
 

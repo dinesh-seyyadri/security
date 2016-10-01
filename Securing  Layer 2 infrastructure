@@ -1,0 +1,170 @@
+topics:
+
+Introduction to Layer 2 Security
+Ethernet Switching Overview
+VLAN Overview
+VLAN Configuration
+802.1Q Trunking
+Trunk Attacks
+Trunk Configuration and Attack Mitigation
+Cisco Discovery Protocol
+ACL Primer
+ACLs on Switches
+MAC Address Abuse
+Port Security
+Private VLANs
+Private VLAN Edge
+Private VLAN Proxy Attack and Mitigation
+
+
+a) Introduction to Layer 2 Security:
+
+Layer 2, the data link layer in the OSI model, provides MAC address based connectivity within a broadcast domain, such as an Ethernet LAN. 
+Network technologies are implemented in stacks, broken into layers. 
+Each layer has very specific duties. Each layer can only communicate with the layers directly above and directly below itself, following well-defined rules. 
+Other than what is passed to direct neighboring layers, the implementation of each layer ignores the complexity of the other layers.0
+Each layer depends on the other layers to perform their duties.
+
+
+
+Take the example of a web browser and a web server communicating with each other. 
+The two applications communicate with each other via a socket that is provided by the transport layer.
+Neither application is concerned with the complexity of the transport layer or any layer beneath the transport layer. 
+Similarly, the transport layer depends on the network layer to carry packets to and from other systems based on IP addresses. 
+The transport layer does not need to deal with the complexity of subnetting and routing. 
+Also, the network layer depends on the data link layer to move frames between systems on the same broadcast domain, based on MAC addresses. 
+Imagine, in this example, if Layer 2 is compromised at some point. Frames which should be passed between two neighboring routers are instead sent to a man-in-the-middle within that broadcast domain.
+Now, all traffic between the web browser and the web server is intercepted by man-in-the-middle, and none of the higher layers have any indication of the security breach.
+
+b) Ethernet Switching Overview:
+
+Ethernet switches implement IEEE 802.1D transparent bridging. 
+Switches learn which ports lead to which host MAC addresses by monitoring the source MAC addresses in the Ethernet headers on frames that arrive on their switch ports.
+The port to MAC address mappings are stored in MAC address tables. 
+The MAC address tables are commonly called CAM tables because many switches uses a special type of technology (Content Addressable Memory) to store the MAC address tables.
+
+
+If a switch receives a frame that is destined for a MAC address that is in its MAC address table, then that frame is only forwarded out of the appropriate port leading to that MAC address. 
+This conserves bandwidth on all the other ports on the switch. 
+If the switch receives a frame with a source MAC address that matches an entry for that port in the MAC address table, the frame is not forwarded out of any ports.
+If the switch receives a frame that is destined for a MAC address that is not in its MAC address table, it floods the frame out of all ports, except for the port where the frame was received.
+If the destination replies to the source, the switch will be able to learn the new MAC address based on the source MAC address in the Ethernet header of the reply.
+
+
+*************************************************************
+Switches: 
+
+Learn based on "source MAC address"
+Forward and Filter based on "Destination MAC address"
+*************************************************************
+
+
+
+c)VLAN Overview:
+
+Each VLAN that you configure on the switch implements address learning, forwarding and filtering decisions, and loop avoidance mechanisms as if the VLAN were a separate physical switch.
+
+The Cisco Catalyst switch implements VLANs by restricting traffic forwarding to destination ports that are in the same VLAN as the originating ports.
+When a frame arrives on a switch port, the switch must retransmit the frame to only the ports that belong to the same VLAN. 
+In essence, a VLAN that is operating on a switch limits transmission of unicast, multicast, and broadcast traffic. 
+Traffic originating from a particular VLAN floods to only the other ports in that VLAN, creating a broadcast domain.
+
+An access port carries only the traffic for the single VLAN to which it belongs.
+A trunk port carries traffic for multiple VLANs. Trunk ports are used to carry traffic for multiple VLANs between physical switches.
+
+
+d)VLAN Configuration:
+
+SwitchX#configure terminal
+SwitchX(config)#vlan 2
+SwitchX(config-vlan)#name management
+
+Before creating VLANs, consider these guidelines:
+
+
+Most Cisco Catalyst desktop switches support a maximum of 128 spanning-tree instances.
+
+ > If the number of VLANs on the switch exceeds the number of supported spanning-tree instances, it is recommended that you configure MSTP on your switch to map multiple VLANs to a single spanning-tree instance.
+
+ > The maximum number of VLANs is switch-dependent. Many access-layer Cisco Catalyst switches can support up to 250 user-defined VLANs.
+
+ > Cisco Catalyst switches have a factory default configuration in which various default VLANs are preconfigured to support various media and protocol types. 
+   The default Ethernet VLAN is VLAN 1. Cisco Discovery Protocol advertisements and other protocols are sent on VLAN 1.
+
+After configuring the VLAN, you should validate the parameters for that VLAN. Use the show vlan id vlan_id or the show vlan name vlan-name command to display information about a particular VLAN.
+
+
+********************
+SwitchX# show vlan id 2
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+2       management                    active    Fa0/2, Fa0/12
+
+VLAN Type  SAID       MTU   Parent RingNo BridgeNo Stp  BrdgMode Trans1 Trans2
+---- ----- ---------- ----- ------ ------ -------- ---- -------- ------ ------
+2    enet  100002     1500  -      -      -        -    -        0      0
+.   .   .
+SwitchX#
+******************
+
+
+Use the show vlan brief command to display one line for each VLAN that displays the VLAN name, the status, and the switch ports.
+
+Use the show vlan command to display information on all configured VLANs. 
+The show vlan command displays the switch ports that are assigned to each VLAN. 
+Other VLAN parameters that are displayed include the type (the default is Ethernet), the SAID that is used for the FDDI trunk, the MTU (the default is 1500 for Ethernet VLAN), the STP, and other parameters that are used for Token Ring or FDDI VLANs.
+
+After creating a VLAN, 
+you can manually assign a port or a number of ports to that VLAN.
+An access port can belong to only one VLAN at a time.
+
+On most Cisco Catalyst switches, you configure the VLAN port assignment from interface configuration mode using the switchport access command.
+
+
+************
+SwitchX# configure terminal
+SwitchX(config)# interface range fastethernet 0/2 - 4
+SwitchX(config-if)# switchport access vlan 2
+
+SwitchX# show vlan
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- ----------------------
+1    default                              active    Fa0/1 
+2    management                     active    Fa0/2, Fa0/3, Fa0/4
+
+*****************************
+
+
+You can use the vlan vlan_number option in the switchport access command to set VLAN membership.
+
+************
+SwitchX(config-if)#switchport access [vlan vlan_number | dynamic]
+
+************
+
+Use the show vlan brief privileged EXEC command to display the VLAN assignment and membership type for all switch ports.
+It is important to note that if a given port does not appear in the Ports column of the table, it could be a trunk port carrying multiple VLANs.
+
+SwitchX# show vlan brief
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                                active    Fa0/1
+2    management                       active    Fa0/2, Fa0/3, Fa0/4 
+3    voice                                  active
+4    data                                   active
+1002 fddi-default                       act/unsup
+1003 token-ring-default              act/unsup
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1004 fddinet-default                  act/unsup
+1005 trnet-default                     act/unsup
+
+****NOTE:It is important to note that if a given port does not appear in the Ports column of the table, it could be a trunk port carrying multiple VLANs.
+
+
+
+
+

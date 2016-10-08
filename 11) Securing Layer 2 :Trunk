@@ -1,0 +1,44 @@
+Trunk Attacks:
+
+ VLAN hopping allows traffic from one VLAN to be seen by another VLAN without first crossing a router.
+ Under certain circumstances, attackers can sniff data and extract passwords and other sensitive information at will. 
+ The attack works by taking advantage of an incorrectly configured trunk port. 
+ By default, trunk ports have access to all VLANs and pass traffic for multiple VLANs across the same physical link, generally between switches. 
+ The data moving across these links may be encapsulated with IEEE 802.1Q or ISL.
+ 
+ In a basic VLAN hopping attack, the attacker takes advantage of the fact that DTP is enabled by default on most switches. 
+ The network attacker configures a system to use DTP to negotiate a trunk link to the switch. 
+ As a result, the attacker is a member of all the VLANS that are trunked on the switch and can “hop” between VLANs. 
+ In other words, the attacker can send and receive traffic on all those VLANs.
+ 
+ The best way to prevent a basic VLAN hopping attack is to turn off DTP on all ports, 
+ and explicitly configure trunking mode or access mode as appropriate on each port.
+ 
+ The double-tagging (or double-encapsulated) VLAN hopping attack takes advantage of the way that hardware operates on some switches. 
+ Some switches perform only one level of 802.1Q decapsulation and allow an attacker, in specific situations, to embed a second 802.1Q tag inside the frame. 
+ This tag allows the frame to go to a VLAN that the outer 802.1Q tag did not specify.
+ An important characteristic of the double-encapsulated VLAN hopping attack is that it can work even if DTP is disabled on the attacker’s access port.
+
+A double-tagging VLAN hopping attack follows these steps, as illustrated in the figure below:
+
+ 1) The attacker sends a double-tagged 802.1Q frame to the switch. 
+ The outer header has the VLAN tag of the attacker, which is the same as the native VLAN of the trunk port. 
+ For the purposes of this example, assume that this is VLAN 10. The inner tag is the victim, VLAN 20.
+
+ 2) The frame arrives on the switch. 
+ The switch sends it out to all VLAN 10 ports (including the trunk), because there is no CAM table entry. 
+ On egress out of the trunk link, the switch sees that the frame has an 802.1Q tag for the native VLAN, and it strips that tag.
+ (This is because 802.1Q specifies that native VLAN traffic is not tagged.)
+ The inner tag to VLAN 20 remains.
+ 
+ 3) The frame arrives at the second switch, which has no knowledge that it was supposed to be for VLAN 10. 
+ The second switch looks only at the 802.1Q tag (the former inner tag that the attacker sent) and sees that the frame is destined for VLAN 20 (the victim VLAN). 
+ The second switch sends the packet on to the victim port, or floods it, depending on whether there is an existing CAM table entry for the victim host.
+ 
+ 
+ It is important to note that this attack is unidirectional and works only when the attacker and trunk port have the same native VLAN. 
+ Thwarting this type of attack is not as easy as stopping basic VLAN hopping attacks. 
+ The best approach is to create a VLAN to use as the native VLAN on all trunk ports and explicitly do not use that VLAN for any access ports.
+ 
+ 
+ 

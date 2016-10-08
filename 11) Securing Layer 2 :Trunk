@@ -1,4 +1,4 @@
-Trunk Attacks:
+f) Trunk Attacks:
 
  VLAN hopping allows traffic from one VLAN to be seen by another VLAN without first crossing a router.
  Under certain circumstances, attackers can sniff data and extract passwords and other sensitive information at will. 
@@ -41,4 +41,142 @@ A double-tagging VLAN hopping attack follows these steps, as illustrated in the 
  The best approach is to create a VLAN to use as the native VLAN on all trunk ports and explicitly do not use that VLAN for any access ports.
  
  
+ Trunk Configuration:
  
+ Cisco Catalyst switches support DTP, which facilitates automatic trunk negotiation.
+ DTP is configured with the switchport mode command. 
+ As shown below, there are four DTP options available:
+ 
+ 1) trunk: This option configures the port into permanent 802.1Q trunk mode and negotiates with the connected device to convert the link to trunk mode. 
+    Switches that support both ISL and 802.1Q need to have the switchport trunk encapsulation dot1q | isl command configured before the switchport mode trunk command is used.
+
+ 2) access: This option disables port trunk mode and negotiates with the connected device to convert the link to nontrunk.
+ 
+ 3)dynamic auto: This option enables a port to become a trunk only if the state of the connected device is set to trunk or desirable. 
+  Otherwise, the port becomes a nontrunk port. This is the default mode for some of the newer Cisco switches.
+ 
+ 4)dynamic desirable: This option triggers the port to negotiate the link from nontrunk to trunk mode.
+   The port negotiates to a trunk port if the connected device is in trunk state, desirable state, or auto state. Otherwise, the port becomes a nontrunk port.
+ 
+ The default mode for DTP is platform-dependent and is most commonly dynamic auto or dynamic desirable. 
+ 
+ Unfortunately, from a security perspective, both of these modes allow an attacker to request trunk negotiation from a PC.
+ Without explicit configuration of DTP on a switch port, the switch will allow the attaching device to negotiate trunking. 
+ Hence, it is relatively easy for an attacker with an 802.1Q capable NIC to request and be granted access to all VLANs. 
+ The recommended option is to explicitly configure switchport mode as either access or trunk on all ports.
+ It is also recommended to explicitly disable DTP negotiation all together with the switchport nonegotiate command. 
+ 
+ This command is valid only when the interface switch port mode has explicitly been set to access or trunk using the switchport mode command.
+ Following is an example, configuring interface Gi0/3 as a trunk:
+ 
+ SwitchX(config)#int g0/3
+ SwitchX(config-if)#switchport mode trunk
+ SwitchX(config-if)#switchport nonegotiate
+ 
+ To verify trunk configuration, use the show interfaces interface switchport or the show interfaces interface trunk command to display the trunk parameters and VLAN information of the port.
+ In the output of the show interfaces switchport command below, notice the distinction between the operational and administrative modes for each port.
+ This distinction is extremely helpful in troubleshooting trunks. 
+ The administrative mode is the configured mode, while the operational mode will depend on the results of trunk negotiations. 
+ If trunk negotiations fail, the port will be administratively configured as a trunk (as shown in the figure), but the operational mode will be different.
+ It could be down, as shown here, or even fall back to an active port on the default VLAN 1.
+
+#############
+SwitchX# show interfaces fa0/11 switchport
+Name: Fa0/11
+Switchport: Enabled
+Administrative Mode: trunk
+Operational Mode: down
+Administrative Trunking Encapsulation: dot1q
+Negotiation of Trunking: On
+Access Mode VLAN: 1 (default)
+Trunking Native Mode VLAN: 1 (default)
+#######
+
+SwitchX# show interfaces fa0/11 trunk
+
+Port        Mode         Encapsulation  Status        Native vlan
+Fa0/11   desirable      802.1q           trunking           1
+
+Port      Vlans allowed on trunk
+Fa0/11      1-4094
+
+Port        Vlans allowed and active in management domain
+Fa0/11      1-13
+
+######
+
+
+The double-tagging VLAN hop attack requires that the attacker is on the native VLAN of the outbound trunk port. 
+This attack can be mitigated by ensuring that no systems attach to the native VLAN used by trunks.
+Specify a unique native VLAN for use on all trunk ports, and do not use that VLAN anywhere else on the switch.
+
+########
+SwitchX(config-if)#vlan 999
+SwitchX(config-vlan)#name native-trunkonly
+SwitchX(config-vlan)#int g0/4
+SwitchX(config-if)#switchport mode trunk
+SwitchX(config-if)#switchport nonegotiate
+SwitchX(config-if)#switchport trunk native vlan 999
+
+######
+
+
+following two options to control trunking port behavior:
+
+
+For links that you do not intend to trunk across, use the switchport mode access interface configuration command to disable trunking.
+This command configures the port as an access port.
+
+For links that you do intend to trunk across, take the following actions:
+
+a) Use the switchport mode trunk interface configuration command to cause the interface to become a trunk link and use the switchport nonegotiate interface configuration command to prevent the generation of DTP frames.
+
+b) Use the switchport trunk native vlan vlan_number interface configuration command to set the native VLAN on the trunk to an unused VLAN. The default native VLAN is VLAN 1.
+
+#############
+
+
+
+g)CDP
+Cisco Discovery Protocol enables Cisco IOS network devices to announce themselves to their neighbors. 
+By default, Cisco devices send a CDP announcement out every interface once per minute. 
+If they receive a CDP announcement, they store that information in a table with a hold time of 3 minutes.
+
+
+
+The potential problem with CDP is that it provides an easy reconnaissance vector to any attacker with an Ethernet connection. 
+When the switch sends a CDP announcement out of a port where a workstation is connected, the workstation normally ignores it. 
+However, with a simple tool such as WireShark, an attacker can capture and analyze the CDP announcement. 
+Included in the CDP data is the model number and operating system version of the switch.
+An attacker can then use this information to look up published vulnerabilities that are associated with that operating system version and potentially follow up with an exploit of the vulnerability.
+
+
+CDP can be useful for network troubleshooting. 
+Some network management software takes advantage of CDP neighbor data to map out topological connectivity. 
+Cisco VoIP deployments can take advantage of CDP to automatically assign the voice VLAN to Cisco IP phones. 
+On the other hand, an attacker can spoof CDP announcements, pretending to be an IP phone, and get access to the voice VLAN. 
+An organization’s security policy should dictate CDP configuration policy.
+The organization must decide whether the convenience that CDP brings to VoIP deployment is greater than the security risk that comes with CDP.
+
+You can use the no cdp enable command in interface configuration mode to disable CDP on an interface. 
+To disable CDP on all interfaces, use the no cdp run command in global configuration mode. You can use the cdp enable command to reenable CDP as needed. 
+The do show cdp neighbors command displays the contents of the CDP neighbor table.
+
+###
+
+lab-sw(config-if)#do show cdp nei
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater, P - Phone,  
+                  D - Remote, C - CVTA, M - Two-port Mac Relay  
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+
+Switch2          Gig 0/3           169          S I       WS-C3560-4Gig 0/1 
+Switch3          Gig 0/4           113          S I       WS-C3560-4Gig 0/1 
+
+<…Output Omitted…>
+
+###
+
+
+

@@ -1,0 +1,85 @@
+ACLs:Access Control Lists
+
+ACLs are often associated with the control of packets in and out of an interface. 
+However, there are many different applications of ACLs.
+For example, they can be used to control route advertisements, to specify interesting traffic for a VPN, and to limit debug output.
+An ACL in isolation is just a packet classification specification. 
+What is done with packets that match the specification depends on how the ACL is applied. 
+This topic will focus on ACLs that control packets traveling into and out of an interface.
+
+Cisco routers support the following two types of IP ACLs:
+
+A) Standard IP ACLs: 
+
+Standard IP ACLs check the source addresses of packets that can be routed.
+The result either permits or denies the output for an entire protocol suite according to the source network, subnet, or host IP address. 
+Standard ACLs filter IP packets based on source address only.
+
+b) Extended IP ACLs: 
+
+Extended IP ACLs check both the source and destination IP addresses. 
+They can also check for specific protocols, port numbers, and other parameters, which allow administrators more flexibility and control.
+
+The two general methods you can use to create ACLs are as follows:
+
+a) Numbered ACLs: An effective method on smaller networks with more homogeneously defined traffic. 
+Because each type of ACL is limited to an assigned range of numbers, it easy to determine the type of ACL that you are using. 
+Specifying an ACL number from 1 to 99 or 1300 to 1999 instructs the router to accept numbered standard IPv4 ACL statements. 
+Specifying an ACL number from 100 to 199 or 2000 to 2699 instructs the router to accept numbered extended IPv4 ACL statements.
+
+b) Named ACLs: Allows you to identify IP standard and extended ACLs with an alphanumeric string (name) instead of the numeric representations.
+Named IP ACLs provide more flexibility in working with the ACL entries.
+
+
+1) ex :numbered standard ACL:
+
+#####
+
+RouterX(config)#access-list 1 permit 172.16.0.0 0.0.255.255
+RouterX(config)#int g0/1
+RouterX(config-if)#ip access-group 1 in
+
+#####
+
+2) ex :named standard ACL:
+
+########
+
+RouterX(config)#ip access-list standard MyFirstACL
+RouterX(config-std-nacl)#permit 192.168.3.1
+RouterX(config-std-nacl)#exit
+RouterX(config)#int g0/2
+RouterX(config-if)#ip access-group MyFirstACL in
+
+#######
+
+3) ex: numbered extended ACL:
+
+######
+
+RouterX(config)#access-list 101 permit tcp host 10.10.1.10 any
+RouterX(config)#access-list 101 permit udp host 10.10.1.20 any
+RouterX(config)#int e0/0
+RouterX(config-if)#ip access-group 101 in
+
+#######
+
+4) ex : named extended ACL:
+
+#######
+
+RouterX(config)#ip access-list extended EXAMPLE
+RouterX(config-ext-nacl)#deny udp any any
+RouterX(config-ext-nacl)#permit tcp host 10.10.1.10 any eq 23
+RouterX(config-ext-nacl)#deny tcp host 10.10.1.10 any
+RouterX(config-ext-nacl)#permit ip any any
+RouterX(config-ext-nacl)#exit
+RouterX(config)#int e0/0
+RouterX(config-if)#ip access-group EXAMPLE in
+
+#######
+
+
+
+
+

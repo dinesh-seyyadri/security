@@ -19,7 +19,7 @@ b) Extended IP ACLs:
 
 Extended IP ACLs check both the source and destination IP addresses. 
 They can also check for specific protocols, port numbers, and other parameters, which allow administrators more flexibility and control.
-
+Mainly used for IP,Tcp,udp,icmp
 The two general methods you can use to create ACLs are as follows:
 
 a) Numbered ACLs: An effective method on smaller networks with more homogeneously defined traffic. 

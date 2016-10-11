@@ -203,3 +203,74 @@ b) show vlan filter:
         Configured on VLANs: 100
         Active on VLANs: 100
 
+
+
+
+
+#####################################################################################################################################
+
+#################################################################################################
+
+
+MAC Address Abuse:
+
+
+MAC spoofing attacks involve the use of a known MAC address of another host to attempt to make the target switch forward frames that are destined for the remote host to the network attacker. 
+By sending a single frame with the source Ethernet address of the other host, the network attacker overwrites the CAM table entry so that the switch forwards packets that are destined for the host to the network attacker.
+Until the host sends traffic, it does not receive any traffic. 
+When the host sends out traffic, the CAM table entry is rewritten once more so that it moves back to the original port.
+
+MAC spoofing attacks can be mitigated by configuring port security.
+
+The CAM table in a switch contains the MAC addresses that can be reached from a given physical port of a switch and the associated VLAN parameters for each. 
+When a Layer 2 switch receives a frame, the switch looks in the CAM table for the destination MAC address. 
+If an entry exists for the MAC address in the CAM table, the switch forwards the frame to the MAC address port designated in the CAM table. 
+If the MAC address does not exist in the CAM table, the switch floods the frame out of every port on the switch.
+
+CAM is a special type of memory.
+The bridge table or MAC address table is the data structure that is stored in that special type of memory.
+
+
+The most important point to understanding how CAM overflow attacks work is to know that CAM tables are limited in size.
+MAC flooding takes advantage of this limitation by bombarding the switch with fake source MAC addresses until the switch CAM table is full.
+If enough entries are entered into the CAM table, the CAM table fills up to the point that no new entries can be accepted. 
+Note that this attack will not cause legitimate entries that were in the CAM table before the attack to be removed. 
+As long as activity is seen from the legitimate MAC addresses, their spot in the CAM table will be reserved. 
+But if they time out, the attack will quickly consume the freed spot in the CAM table and the legitimate MAC address will not be relearned.
+
+In a CAM table overflow attack, a network attacker uses a tool such as the macof program and floods the switch with many invalid source MAC addresses until the CAM table fills up. 
+When that occurs, the switch begins to flood traffic for unknown MAC addresses to all ports because there is no room in the CAM table to learn any legitimate MAC addresses.
+In essence, the switch acts like a hub. As a result, the attacker can see all the frames that are sent from a victim host to another host without a CAM table entry. 
+CAM table overflow floods traffic only within the local VLAN, so the intruder will see only traffic within the local VLAN to which the attacker is connected.
+
+In a CAM table overflow attack, a network attacker uses a tool such as the macof program and floods the switch with many invalid source MAC addresses until the CAM table fills up. When that occurs, the switch begins to flood traffic for unknown MAC addresses to all ports because there is no room in the CAM table to learn any legitimate MAC addresses. 
+In essence, the switch acts like a hub.
+As a result, the attacker can see all the frames that are sent from a victim host to another host without a CAM table entry. 
+CAM table overflow floods traffic only within the local VLAN, so the intruder will see only traffic within the local VLAN to which the attacker is connected.
+
+If the attacker does not maintain the flood of invalid source MAC addresses, the switch eventually ages out older MAC address entries from the CAM table and begins to act like a switch again.
+
+The macof program is running on host C. 
+The macof program is one of many tools that can flood a switch with packets that contain randomly generated source and destination MAC addresses. 
+Over a short period, the CAM table in the switch fills up until it cannot accept new entries.
+Entries that were in the CAM table before the attack started remain in the table, but when the CAM table is full, the switch begins to flood frames that are destined to legitimate MAC addresses that can no longer be placed into the CAM table.
+
+In normal ARP operation, a host sends an ARP request broadcast to determine the MAC address of a destination host with a particular IP address.
+The device with the requested IP address sends an ARP reply with its MAC address. 
+The originating host caches the ARP response, using it to populate the destination Layer 2 header of frames that are sent to that IP address.
+By spoofing an ARP message from a legitimate device, an attacking device deceives a victim device, causing it to cache the attacking device’s MAC address instead of the legitimate device’s IP address. 
+The victim then sends frames that are destined for the legitimate device’s IP address to the attacker’s MAC address.
+
+An ARP spoofing attack, also known as ARP cache poisoning, can target hosts, switches, and routers that are connected to your Layer 2 network by poisoning the ARP caches of systems that are connected to the subnet, and by intercepting traffic that is intended for other hosts on the subnet.
+The figure below shows an example of ARP cache poisoning, as detailed in the “ARP Spoof Attack” table. In this scenario, host B is the attacker. 
+Host B becomes a man in the middle. Host A mistakenly forwards frames that are destined for the gateway to Host B. 
+The gateway mistakenly forwards frames that are destined for Host A to Host B.
+Host B can process the frames and then forward the frames to their correct destination. 
+Host B may passively capture private data as a man in the middle, or it could actively inject or modify data or hijack network sessions.
+
+
+To prevent ARP cache poisoning, a switch must ensure that only valid ARP requests and responses are allowed within a subnet. 
+The DAI feature of Cisco switches prevents ARP cache poisoning by intercepting and validating all ARP requests and responses. 
+Each intercepted ARP message is verified for valid MAC-to-IP address bindings before it is forwarded.
+ARP replies with invalid MAC-to-IP address bindings are dropped.
+

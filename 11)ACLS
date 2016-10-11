@@ -81,5 +81,125 @@ RouterX(config-if)#ip access-group EXAMPLE in
 
 
 
+ACLS on Switches:
 
+ ACLs can be applied in three different ways to control traffic flow on Cisco switches:
+
+1) PACLs: PACLs provide access control to traffic entering a Layer 2 interface. (port access lists)
+Cisco multilayer switches do not support PACLs in the outbound direction. 
+You can apply only one IP ACL and one MAC ACL to a Layer 2 interface.
+
+2) Router ACLs: Router ACLs provide access control to routed traffic between VLANs and are applied to Layer 3 interfaces in a specific direction (inbound or outbound). 
+Router ACLs can also be implemented on switches with Switched Virtual Interfaces (SVIs).
+
+3) VACLs: Also known as VLAN maps, they provide access control to all traffic on a VLAN. 
+You can apply VLAN maps to all packets that are routed into or out of a VLAN or are bridged within a VLAN in the switch. 
+You do not define VACLs by direction (input or output).
+
+
+There are two types of PACLs:(port access lists)
+
+a) IP access list: This PACL filters IPv4 and IPv6 packets on a Layer 2 port.
+b) MAC access list: This PACL filters packets that are of an unsupported type, based on the fields of the Ethernet frame. 
+A MAC access list is not applied to IP, MPLS, or ARPmessages. You can define only named MAC access lists.
+
+ex:  MAC PACL
+
+######
+
+Switch(config)# mac access-list extended simple-mac-acl
+Switch(config-ext-macl)# permit host 0000.dada.fafa any
+Switch(config-ext-macl)# interface gigabitEthernet 2/0/22
+Switch(config-if)# mac access-group simple-mac-acl in
+
+#######
+
+
+ex:  IP PACL
+
+######
+
+Switch(config)# ip access-list extended simple-ip-acl
+Switch(config-ext-nacl)# permit ip host 10.0.0.1 any
+Switch(config-ext-nacl)# interface gigabitEthernet 2/0/22
+Switch(config-if)# ip access-group simple-ip-acl in
+
+####
+
+
+VACLs (also known as VLAN maps in Cisco IOS Software) apply to all the traffic on the VLAN. VLAN maps have no direction. 
+To use a VLAN map to filter traffic in a specific direction, you must include an ACL with specific source or destination addresses.
+
+
+Each VLAN map consists of a series of entries. 
+The order of entries in a VLAN map is important.
+A packet that comes into the switch is tested against the first entry in the VLAN map. 
+If the packet matches, the action that is specified for that part of the VLAN map is taken.
+If there is no match, the packet is tested against the next entry in the map. 
+If the packet does not match any of these match clauses, the default is to drop the packet.
+
+Three VACL actions are permitted:
+
+a) Forward (with capture, Cisco Catalyst 6500 Series Switches only)
+b) Drop (with logging, Catalyst 6500 Series only)
+c) Redirect (Catalyst 6500 Series only)
+
+The VACL match statement is used to reference an IP ACL or MAC ACL.
+
+This command matches the packet (using either the IP or the MAC address) against one or more standard or extended ACLs.
+Packets are matched only against ACLs of the correct protocol type. IP packets are matched against standard or extended IP ACLs.
+Non-IP packets are matched only against named MAC extended ACLs. The full syntax for the command is as follows:
+
+
+match {ip | mac} address {name | number} [name | number]
+
+ex:
+
+Cat6K-IOS(config)#ip access-list extended Permit_Web_Traffic
+Cat6K-IOS(config-ext-nacl)#permit tcp any any eq 443
+Cat6K-IOS(config-ext-nacl)#permit udp any any
+Cat6K-IOS(config-ext-nacl)#exit
+Cat6K-I
+
+OS(config)#vlan access-map Client_VLAN_Map
+Cat6K-IOS(config-access-map)#match ip address Permit_Web_Traffic
+Cat6K-IOS(config-access-map)#action forward
+Cat6K-IOS(config-access-map)#exit
+Cat6K-IOS(config)#vlan filter Client_VLAN_Map vlan-list 100
+
+The example shows a VACL. In the example, the IP extended ACL named Permit_Web_Traffic is used to match all HTTPS and all UDP traffic:
+
+at6K-IOS(config)#ip access-list extended Permit_Web_Traffic
+Cat6K-IOS(config-ext-nacl)#permit tcp any any eq 443
+Cat6K-IOS(config-ext-nacl)#permit udp any any
+
+
+The following lines from the VACL define the VLAN access map and define that the HTTPS and UDP traffic that is matched by the Permit_Web_Traffic ACL should be forwarded:
+
+Cat6K-IOS(config)#vlan access-map Client_VLAN_Map
+Cat6K-IOS(config-access-map)#match ip address Permit_Web_Traffic
+Cat6K-IOS(config-access-map)#action forward
+
+The following line applies the VLAN access map to the appropriate VLAN. In this example, the VLAN is 100.
+ 
+ Cat6K-IOS(config)#vlan filter Client_VLAN_Map vlan-list 100
+ 
+ The result of this VACL is that all HTTPS traffic and all UDP traffic in VLAN 100 is forwarded.
+ All other IP traffic that does not match the ACL (that is, packets that are not HTTPS packets or UDP packets) is dropped by default.
+
+VACLs Show commands:
+
+a) show vlan access-map: 
+
+           Switch#show vlan access-map
+           Vlan access-map "Client_VLAN_Map" 10
+           match: ip address Permit_Web_Traffic
+           action: forward
+
+b) show vlan filter:
+
+        Switch#show vlan filter
+        VLAN Map Client_VLAN_Map:
+        Configured on VLANs: 100
+        Active on VLANs: 100
 

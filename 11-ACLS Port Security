@@ -274,3 +274,64 @@ The DAI feature of Cisco switches prevents ARP cache poisoning by intercepting a
 Each intercepted ARP message is verified for valid MAC-to-IP address bindings before it is forwarded.
 ARP replies with invalid MAC-to-IP address bindings are dropped.
 
+
+Port Security:
+
+You can use the port security feature to restrict input to an interface by limiting the maximum number of MAC addresses and identifying particular MAC addresses that are allowed to access the port.
+When you assign secure MAC addresses to a secure port, the port does not forward packets that have source addresses that are outside the group of defined addresses.
+
+
+Port security allows you to statically specify MAC addresses for a port or permit the switch to dynamically learn a limited number of MAC addresses.
+By limiting the number of permitted MAC addresses on a port to one, you can use port security to control unauthorized expansion of the network.
+Limiting the maximum number of MAC addresses on a port also mitigates the CAM table overflow attack.
+
+
+When a secure port receives a packet, the source MAC address of the packet is compared to the list of secure source addresses that were manually configured or dynamically learned on the port. 
+If the arriving MAC address is on the list, it is processed normally.
+If the arriving MAC address is not on the list, but dynamic learning is enabled and there is room for an additional MAC address, it is added to the list and processed normally. 
+If the MAC address is not on the list and learning is disabled or the maximum number of MAC addresses is already reached, one of three actions is taken based on the configured violation mode:
+
+1) Protect: The offending frame is dropped.
+2)Restrict: The offending frame is dropped and an SNMP trap and a Syslog message are generated.
+3)Shutdown: The interface is placed in an error-disabled state and an SNMP trap and a Syslog message are generated. 
+The port is inactive while in an error-disabled state.
+Administrative action is required to return the port to a normal state
+
+
+config typical port security configuration for a voice port:
+
+note: Two MAC addresses are allowed and they are learned dynamically.
+One MAC address is for the IP phone and the other IP address is for the PC connected to the IP phone.
+Violations of this policy result in the port being shut down and the aging timeout for the learned MAC addresses being set to two hours.
+
+########
+
+Switch(config)#interface g0/8
+Switch(config-if)#switchport mode access 
+Switch(config-if)#switchport port-security 
+Switch(config-if)#switchport port-security maximum 2	
+Switch(config-if)#switchport port-security violation shutdown	
+Switch(config-if)#switchport port-security mac-address sticky 
+Switch(config-if)#switchport port-security aging time 120
+
+####
+
+show commands Port security:
+
+show port-security
+show port-security [interface interface-id]
+###########################
+Switch#show port-security address
+Secure Mac Address Table
+-------------------------------------------------------------------
+Vlan    Mac Address       Type                Ports   Remaining Age
+                                                         (mins)
+----    -----------       ----                -----   -------------
+   1    0000.ffff.aaaa    SecureConfigured    g0/8       -
+-------------------------------------------------------------------
+Total Addresses in System (excluding one mac per port)     : 0
+Max Addresses limit in System (excluding one mac per port) : 1024
+
+######################
+
+

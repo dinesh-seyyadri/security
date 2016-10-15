@@ -1,0 +1,96 @@
+STP Overview:
+
+Redundant designs can mitigate the possibility of a single point of failure, which causes a loss of function for the entire switched or bridged network. However, you must consider problems that redundant designs can cause.
+Some of the problems that can occur with redundant links and devices in switched or bridged networks are as follows:
+
+  1) Broadcast storms: Without some loop-avoidance process in operation, each switch or bridge floods broadcasts endlessly. 
+     This situation is commonly called a broadcast storm.
+     
+  2) Multiple frame transmission: Multiple copies of unicast frames may be delivered to destination stations.
+     Many protocols expect to receive only a single copy of each transmission.
+     Multiple copies of the same frame can cause unrecoverable errors.
+     
+   3) MAC database instability: Instability in the content of the MAC address table results from copies of the same frame being received on different ports of the switch.
+      Data forwarding can be impaired when the switch consumes the resources that are coping with instability in the MAC address table.
+      
+   Layer 2 LAN protocols, such as Ethernet, lack a mechanism to recognize and eliminate endlessly looping frames. 
+   Some Layer 3 protocols implement a TTL mechanism that limits the number of times a Layer 3 networking device can retransmit a packet. 
+   Lacking such a mechanism, Layer 2 devices continue to retransmit looping traffic indefinitely.
+   
+   STP offers a solution.
+   It determines the optimal path back to a root switch from any point in the Layer 2 network, and allows forwarding on the optimal paths while blocking on suboptimal paths that would introduce loops into the topology. 
+   If there is a failure in the network, STP will reconverge using a new set of optimal paths given the current conditions.
+   
+   
+STP Attacks:
+
+A network attacker can use STP to change the topology of a network so that the network attacker host appears to be a root bridge with a higher priority. 
+The attacker sends out BPDUs with a better bridge ID and thus becomes the root bridge.
+As a result, traffic between the two switches in the figure passes through the new root bridge, which is actually the attacker system.
+
+This attack can be used against all three security objectives of confidentiality, integrity, and availability.
+
+STP Attack Mitigation:
+
+The spanning-tree PortFast feature causes an interface that is configured as a Layer 2 access port to transition from the blocking to the forwarding state immediately, bypassing the listening and learning states. 
+The delay that is caused by the transitions through listening and learning before forwarding can lead to timeouts on DHCP requests and other initialization tasks that take place when a PC boots.
+You can use PortFast on Layer 2 access ports that connect to a single workstation or server to allow those devices to connect to the network.
+
+Because the purpose of PortFast is to minimize the time that access ports must wait for spanning tree to converge, it should be used only on ports connecting to hosts. 
+If you enable PortFast on a port that connects to another switch, you risk creating a spanning-tree loop.
+
+The following PortFast table lists the commands that you use to implement and verify PortFast on an interface.
+
+
+
+PortFast Commands:
+
+
+1) Switch(config-if)# spanning-tree portfast
+
+This command enables PortFast on a Layer 2 access port and forces it to enter the forwarding state immediately.
+
+2) Switch(config-if)# no spanning-tree portfast	
+
+This command disables PortFast on a Layer 2 access port. PortFast is disabled by default.
+
+3) Switch(config)# spanning-tree portfast default
+
+This command globally enables the PortFast feature on all nontrunking ports.
+
+4) Switch# show running-config interfacetype slot/port
+
+This command indicates whether PortFast has been configured on a port.
+
+To mitigate STP manipulation, use the root guard and the BPDU guard enhancement commands that are available on Cisco switches to enforce the placement of the root bridge in the network and enforce the STP domain borders.
+
+BPDU Guard:
+
+ In a properly configured network, ports that are configured with the portfast feature should never receive BPDUs.
+ BPDU Guard works with the PortFast feature to protect the switched network from the problems that may be caused by the receipt of BPDUs on ports that should not be receiving them. 
+ The receipt of unexpected BPDUs may be accidental or may be part of an unauthorized attempt to add a switch to the network.
+ 
+ BPDU Guard is enabled on all ports that are configured for PortFast using the spanning-tree portfast bpduguard default command in global configuration mode. 
+ BPDU Guard can also be enabled on interfaces where PortFast is configured, or not configured, using the spanning-tree bpduguard enable command in interface configuration mode.
+ The attacker sends out spoofed BPDUs to become the root bridge. Upon receipt of a BPDU, the BPDU Guard feature disables the port.
+
+
+Root Guard:
+
+The Root Guard feature of Cisco switches prevents a switch from becoming a root bridge on configured ports.
+The Root Guard feature is designed to provide a way to enforce the placement of root bridges in the network.
+Root Guard limits the switch ports from which the root bridge may be negotiated. 
+
+If a port where Root Guard is enabled receives BPDUs that are superior to BDPUs which the current root bridge is sending, then the port transitions to a root-inconsistent state, which is effectively equal to an STP listening state, and no data traffic is forwarded across that port.
+
+Root guard is best deployed toward ports that connect to switches that should not be the root bridge.
+Root Guard is enabled using the spanning-tree guard root command in interface configuration mode.
+
+the attacker sends out spoofed BPDUs to become the root bridge. 
+Upon receipt of a BPDU, the switch with the Root Guard feature configured on that port ignores the BPDU and puts the port in a root-inconsistent state. 
+The port will recover when the offending BPDUs cease.
+
+DHCP Overview:
+
+
+

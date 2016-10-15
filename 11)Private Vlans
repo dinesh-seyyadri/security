@@ -1,0 +1,145 @@
+Private VLANs:
+
+Service providers often have devices from multiple clients, as well as their own servers, on a single DMZ segment or VLAN. 
+As security issues proliferate, it becomes necessary to provide traffic isolation between devices even though they may exist on the same Layer 3 segment or VLAN.
+
+The traditional solution to address these ISP requirements is to provide one VLAN per customer, with each VLAN having its own IP subnet.
+A Layer 3 device then provides interconnectivity and access control between VLANs and Internet destinations.
+
+There are several challenges with this traditional solution:
+
+a) Supporting a separate VLAN per customer can require a high number of interfaces on service provider network devices.
+b) The network address space must be divided into many subnets, which wastes space and increases management complexity.
+c) Multiple ACL applications are required to maintain security on multiple VLANs, resulting in increased management complexity.
+
+PVLANs provide Layer 2 isolation between ports within the same VLAN. 
+This isolation eliminates the need for a separate VLAN and IP subnet per customer.
+
+PVLANs provide Layer 2 isolation between ports within the same VLAN.
+This isolation eliminates the need for a separate VLAN and IP subnet per customer.
+
+PVLANs provide Layer 2 isolation between ports within the same VLAN. 
+This isolation eliminates the need for a separate VLAN and IP subnet per customer.
+
+A port in a PVLAN can be one of three types: isolated, promiscuous, or community.
+
+1) Isolated: These ports are access ports that are assigned to an isolated VLAN. 
+   An isolated port has complete Layer 2 separation from other ports within the same primary PVLAN, except for a promiscuous port.
+   PVLANs block all traffic to isolated ports, except the traffic from promiscuous ports.
+   Traffic that is received from an isolated port is forwarded only to promiscuous ports.
+   
+2) Promiscuous:These ports are access ports that are assigned to a primary VLAN and typically connect to a router or firewall. 
+   A promiscuous port can communicate with all ports within the PVLAN, including the community and isolated ports. 
+   The default gateway for the segment would likely be hosted on a promiscuous port, given that all devices in the PVLAN need to communicate with that port.
+   
+3) Community:These ports are access ports that are assigned to a community VLAN. 
+   Community ports communicate among themselves and with the promiscuous ports. 
+   These interfaces are isolated at Layer 2 from all other interfaces in other communities or in isolated ports within their primary PVLAN.
+   
+   
+PVLAN ports are associated with a set of supporting VLANs that are used to create the PVLAN structure.
+
+A PVLAN uses a VLAN in three ways:
+
+ a) As a primary VLAN: This type of VLAN carries traffic from promiscuous ports to isolated, community, and other promiscuous ports in the same primary VLAN.
+ b) As an isolated VLAN: This type of VLAN carries traffic from isolated ports to a promiscuous port.
+ c) As a community VLAN: This type of VLAN carries traffic between community ports and to promiscuous ports. 
+    You can configure multiple community VLANs in a PVLAN.
+ 
+Isolated and community VLANs are called secondary VLANs. 
+You can extend PVLANs across multiple devices by trunking the primary, isolated, and community VLANs to other devices that support PVLANs.
+
+
+Private VLAN Edge:
+
+ In many environments, there is no valid reason for communication between neighbors (forwarding traffic at Layer 2 between ports on the same switch).
+ On client or user VLANs, communication goes through central servers in the data center. 
+ Blocking communication between neighbors effectively mitigates attacks between neighboring hosts, such as ARP cache poisoning.
+ 
+ The same may be true in other circumstances. For example, if a subnet contains a number of web servers, those servers may not need to communicate with each other. 
+ A web server may redirect a client from itself to another web server, but doing so constitutes a new client connection. 
+ If a server is compromised, preventing it from communicating with others limits its use as a stepping stone in another attack. 
+ In such an environment, the use of protected ports ensures that there is no exchange of unicast, broadcast, or multicast traffic between these ports on the switch.
+ 
+ 
+ Protected ports, also referred to as PVLAN Edge, have the following features:
+ 
+1)The switch does not forward any data traffic (unicast, multicast, or broadcast) from one protected port to any other protected port. 
+  Only control traffic is forwarded because control traffic packets are processed by the CPU and forwarded in software.
+  All data traffic that needs to pass between protected ports must be forwarded through a Layer 3 device.
+
+2) The forwarding behavior between a protected port and a nonprotected port proceeds as usual.
+
+PVLAN Edge is relevant only to the switch on which it is configured. 
+PVLAN Edge provides the same function as PVLAN with regard to promiscuous and isolated ports. 
+What it lacks is community ports. What it offers is a much simpler configuration.
+
+#######
+SwitchX(config)#interface range g0/1 - 22
+SwitchX(config-if)#switchport protected
+#######
+
+show interfaces g0/1 switchport
+
+########
+
+Switch#show interfaces g0/1 switchport
+Name: g0/1
+Switchport: Enabled
+Administrative Mode: dynamic desirable
+Operational Mode: static access
+Administrative Trunking Encapsulation: dot1q
+Operational Trunking Encapsulation: native
+Negotiation of Trunking: On
+Access Mode VLAN: 1 (default)
+Trunking Native Mode VLAN: 1 (default)
+
+{output omitted}
+
+Pruning VLANs Enabled: 2-1001
+Capture Mode Disabled
+Capture VLANs Allowed: ALL
+Protected: true
+
+########
+
+
+Private VLAN Proxy Attack and Mitigation :
+
+
+One network attack capable of bypassing the network security of PVLANs involves the use of a proxy to bypass access restrictions to a PVLAN.
+
+In PVLAN environments, routers are normally connected via promiscuous ports.
+In proxy attacks against PVLANs, frames are forwarded to a router which may reencapsulate the frame and send it back to the target device within the same PVLAN.
+
+Attack:
+
+The network attacker sends a packet with the source IP and MAC address of the attacker device, the destination IP address of the target system (host C in the example), but a destination MAC address of the router. 
+The switch forwards the frame to the switch port of the router. 
+The router processes the packet, rewriting the destination MAC address to that of the target, and forwarding the packet back to the PVLAN.
+Now the packet has the proper format and is forwarded to the target system. 
+In this scenario, the network defense is working as designed, but the attacker has figured out a way to circumvent the PVLAN rules.
+
+Mitigation:
+
+You can mitigate these PVLAN attacks by configuring ACLs on the router interface. 
+Denying packets from the local subnet to the local subnet prevents the use of the router as a proxy in the PVLAN proxy attack. 
+The example below builds such an ACL and applies it to an interface.
+
+#####
+
+Router(config)#access-list 101 permit icmp any host 10.0.1.1
+Router(config)#access-list 101 deny ip 10.0.1.0 0.0.0.255 10.0.1.0 0.0.0.255
+Router(config)#access-list 101 permit ip any any
+Router(config)#interface g0/0
+Router(config-if)#ip access-group 101 in
+
+#####
+
+
+
+
+
+ 
+ 
+ 

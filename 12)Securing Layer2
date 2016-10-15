@@ -92,5 +92,143 @@ The port will recover when the offending BPDUs cease.
 
 DHCP Overview:
 
+Originally, network administrators had to manually configure IP addresses and other network parameters on equipment connecting to the Internet. 
+DHCP was introduced to automate assignment of network parameters.
 
 
+Managing network addresses can be time-consuming. 
+Network clients break or are moved around, and new clients appear that need network connectivity—all part of the network administrator job.
+Manually administering the IP addresses for all devices in the network is tedious at best and impossible Often.
+DHCP greatly lightens the workload of the network administrator and pleases the network user.
+DHCP automatically assigns an IP address from an IP address pool that is defined by the administrator.
+However, DHCP is much more than just an IP address allocation mechanism.
+A DHCP server can push other initial configuration parameters to the client devices, such as the addresses of the default gateway and the DNS servers.
+
+
+DHCP supports three mechanisms for IP address allocation. With automatic allocation, DHCP assigns a permanent IP address to a client. 
+With dynamic allocation, DHCP assigns an IP address to a client for a limited time (or until the client explicitly relinquishes the address).
+With manual allocation, the network administrator defines the IP address assignment, which is based on the MAC address, and DHCP is used simply to convey the assigned address to the client.
+
+Dynamic allocation is the only one of the three mechanisms that allows automatic reuse of an address that is no longer needed by the client to which it was assigned. 
+Dynamic allocation is particularly useful for assigning an address to a client that will be connected to the network only temporarily or for sharing a limited pool of IP addresses among a group of clients that do not need permanent IP addresses. 
+Dynamic allocation may also be a good choice for assigning an IP address to a new client that is being permanently connected to a network in which IP addresses are so scarce that it is important to reclaim them when clients are retired.
+
+The normal DHCP process follows:
+
+ 1) The client issues a discover broadcast.
+
+ 2) The server responds with an offer. Since multiple DHCP servers may respond to the discover message, there are two more steps to complete the handshake.
+
+ 3) The client responds to the offer with a request.
+
+ 4) The server responds to the request with an acknowledgement.
+
+The acronym DORA—discover, offer, request, acknowledgment—can be used to remember this sequence.
+
+
+
+DHCP Attacks:
+
+Two DHCP related attacks can be performed at Layer 2: DHCP spoofing attacks and DHCP starvation attacks.
+
+ 1) DHCP Server Spoofing:
+ 
+DHCP does not include authentication and is therefore easily vulnerable to spoofing attacks. 
+The simplest attack is DHCP server spoofing. The attacker runs DHCP server software and replies to DHCP requests from legitimate clients. 
+As a rogue DHCP server, the attacker can cause a DoS by providing invalid IP information. 
+The attacker can also perform confidentiality or integrity breaches via a man-in-the-middle attack. 
+The attacker can assign itself as the default gateway or DNS server in the DHCP replies, later intercepting IP communications from the configured hosts to the rest of the network.
+
+To mitigate that threat, you can use static IP addresses (static IP addresses are obviously not scalable in large environments) or allow the infrastructure to use DHCP snooping to control DHCP traffic.
+
+  2)DHCP Starvation:
+  
+  A DHCP starvation attack works by sending a flood of DHCP requests with spoofed MAC addresses. 
+  If enough requests are sent, the network attacker can exhaust the address space available to the DHCP servers.
+  This flooding would cause a loss of network availability to new DHCP clients as they connect to the network.
+  A DHCP starvation attack may be executed before a DHCP spoofing attack. 
+  
+  If the legitimate DHCP server’s resources are exhausted, then the rogue DHCP server on the attacker system has no competition when it responds to new DHCP requests from clients on the network.
+
+  To mitigate DHCP address starvation attacks, deploy port security address limits, which set an upper limit of MAC addresses that can be accepted into the CAM table from any single port.
+  Because each DHCP request must be sourced from a separate MAC address, this mitigation technique effectively limits the number of IP addresses that can be requested from a switch port-connected attacker.
+  Set this parameter to a value that is never legitimately exceeded in your environment.
+  
+  DHCP Snooping:
+  
+  DHCP snooping is a Layer 2 security feature that specifically prevents DHCP server spoofing attacks and mitigates DHCP starvation to a degree.
+  DHCP snooping provides DHCP control by filtering untrusted DHCP messages and by building and maintaining a DHCP snooping binding database, which is also referred to as a DHCP snooping binding table.
+
+For DHCP snooping to work, each switch port must be labeled as trusted or untrusted. Trusted ports are the ports over which the DHCP server is reachable and that will accept DHCP server replies.
+All other ports should be labeled as untrusted ports and can only source DHCP requests. Typically, this approach means the following:
+
+ 1) All access ports should be labeled as untrusted, except the port to which the DHCP server is directly connected.
+ 2) All interswitch ports should be labeled as trusted.
+ 3) All ports pointing towards the DHCP server (that is, the ports over which the reply from the DHCP server is expected) should be labeled as trusted.
+
+Untrusted ports are those ports that are not explicitly configured as trusted.
+A DHCP binding table is automatically built by analyzing normal DHCP transactions on all untrusted ports. Each entry contains the client MAC address, IP address, lease time, binding type, VLAN number, and port ID that are recorded as clients make DHCP requests. The table is then used to filter subsequent DHCP traffic. From a DHCP snooping perspective, untrusted access ports should not send any DHCP server responses, such as DHCPOFFER, DHCPACK, or DHCPNAK. 
+The switch will drop all such DHCP packets.
+
+DHCP protection mechanisms on the access layer of the network. 
+
+User ports are designated as untrusted for DHCP snooping, while inter-switch links are designated as trusted, if the DHCP server is reachable through the network core. 
+User ports also have port security to limit MAC addresses and prevent DHCP starvation attacks.
+
+Below is an example DHCP snooping configuration. DHCP snooping must first be enabled globally.
+DHCP is then explicitly enabled on VLANs 10 through 19. 
+By default the DHCP snooping database is only kept in RAM, so the database is lost if the switch reboots.
+The example shows the use of a file in flash to provide a database that will persist through a reload. 
+Interface Gi0/24 is an uplink to another switch where the DHCP server resides.
+It is configured to be trusted by DHCP snooping so DHCP replies from the server will be allowed. 
+Interfaces Gi0/1 through Gi0/12 are access ports.
+By default they are untrusted, but DHCP rate limiting is also applied, preventing a flood of DHCP requests to be sourced from the interfaces.
+
+#######
+Switch(config)#ip dhcp snooping
+Switch(config)#ip dhcp snooping vlan 10-19
+Switch(config)#ip dhcp snooping database flash:/dhcpsnoop
+Switch(config)#interface gi0/24
+Switch(config-if)#ip dhcp snooping trust
+Switch(config-if)#interface range gi0/1 - 12
+Switch(config-if-range)#ip dhcp snooping limit rate 10
+
+######
+
+Show Commands:
+
+show ip dhcp snooping
+show ip dhcp snooping database [detail] 
+show ip dhcp snooping binding
+
+#############################
+
+
+ARP Overview:
+
+Devices that use Layer 3 IP addresses need ARP to map IP network addresses to MAC hardware addresses. 
+Before a device sends a datagram to another device on the same subnet, it looks in its ARP cache to see if there is a MAC address that corresponds to the destination IP address.
+If there is no entry, the source device sends a broadcast ARP request to every device on the network. Each device compares the IP address to its own. 
+The device with the matching IP address sends an ARP reply containing its MAC address.
+The source device adds the destination device MAC address to its ARP table for future reference, and will use that MAC address in the Layer 2 header for subsequent communication.
+
+ARP Spoofing Attack Sequence:
+
+
+
+Step
+
+ 1) Host A sends an ARP request for the Router C MAC address.
+ 2) Router C replies with its MAC and IP address.
+ 3) Router C updates its ARP cache
+ 4) Host A binds the Router C MAC address to its IP address in the ARP cache.
+ 5) Host B (attacker) sends unsolicited ARP messages to Host A, binding the MAC address of Attacker B to the IP address of Router C.
+ 6) Host A updates its ARP cache with the MAC address of Attacker B bound to the IP address of Router C.
+ 7) Host B (attacker) sends unsolicited ARP messages to Router C, binding the MAC address of Host B to the IP address of Host A.
+ 8) Router C updates its ARP cache with the MAC address of Host B bound to the IP address of Host A.
+ 9) Packets between Host A and Router C are now diverted through the attacker (B).
+ 
+ Dynamic ARP Inspection :
+ 
+ 
+ 

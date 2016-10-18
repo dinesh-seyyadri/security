@@ -1,0 +1,69 @@
+show command
+sh run | section router  //roteing configuration
+
+sh ip route  //view routeing table
+
+Use Loki to Perform Routing Reconnaissance
+
+Loki is a route security authentication tool that was developed to demonstrate the importance of securing routing protocols.
+It is very effective at that purpose. 
+It is written in Python, so the source code is readable and an attacker who wished to build upon Loki’s capabilities certainly could.
+Often, this type of tool has a few bugs. The directions that are provided for this discovery avoid those bugs.
+Loki has more features that are associated with OSPF than EIGRP, so this discovery will focus on OSPF. 
+In this section of the discovery, you will launch the Loki application on the Kali-PC and perform reconnaissance on the OSPF routing protocol.
+
+loki.py
+
+########
+
+
+Rtr-2>enable
+Rtr-2#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#key chain router-keys
+Rtr-2(config-keychain)#key 1
+Rtr-2(config-keychain-key)#key-string key
+Rtr-2(config-keychain-key)#cryptographic-algorithm md5
+Rtr-2(config-keychain-key)#interface g0/1
+Rtr-2(config-if)#ip ospf authentication key-chain router-keys
+*Oct 28 13:46:46.822: %OSPF-5-ADJCHG: Process 100, Nbr 10.10.10.1 on GigabitEthernet0/1 from LOADING to FULL, Loading Done
+Rtr-2(config-if)#end
+*Oct 28 13:46:47.636: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-2#
+
+######
+
+Rtr-2#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#interface g0/1
+Rtr-2(config-if)#ip authentication mode eigrp 10 md5
+*Oct 28 19:05:46.578: %DUAL-5-NBRCHANGE: EIGRP-IPv4 10: Neighbor 10.10.10.3 (GigabitEthernet0/1) is down: authentication mode changed
+Rtr-2(config-if)#ip authentication key-chain eigrp 10 router-keys
+Rtr-2(config-if)#end
+*Oct 28 19:05:53.520: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-2#
+
+##########
+
+
+Rtr-3(config-keychain-key)#interface g0/1
+Rtr-3(config-if)#ip authentication mode eigrp 10 md5
+Rtr-3(config-if)#ip authentication key-chain eigrp 10 eigrp-keys
+*Oct 28 19:08:38.900: %DUAL-5-NBRCHANGE: EIGRP-IPv4 10: Neighbor 10.10.10.2 (GigabitEthernet0/1) is up: new adjacency
+Rtr-3(config-if)#end
+*Oct 28 19:08:45.327: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-3#
+
+
+###########
+
+
+Rtr-2#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#router eigrp 10
+Rtr-2(config-router)#passive-interface g0/2
+Rtr-2(config-router)#end
+*Oct 28 19:34:05.713: %SYS-5-CONFIG_I: Configured from console by console
+
+
+

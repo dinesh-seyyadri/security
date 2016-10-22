@@ -1,0 +1,219 @@
+Firewall
+
+1) Firewall Overview
+2) Packet Filters
+3) Stateful Firewalls
+4) Proxy Servers
+5) Next-Generation Firewalls
+6) Logging
+
+
+1) Firewall Overview:
+
+Networks are commonly divided into zones with differing security requirements. 
+In a network, a firewall is intended to control what passes from one security zone to another. 
+If a system is compromised in one zone, firewalls help to contain the attack to within that zone. 
+In addition, within a network, firewalls also have the job of preventing the undesirable access in the first place.
+
+Consider the following common deployment scenario for a firewall using three zones:
+ Inside: a private, trusted network
+ Outside: the public, untrusted Internet
+ DMZ: a zone containing servers which are accessible by the public Internet
+
+While every deployment has its own unique requirements, there are some policies that are commonly implemented in this type of deployment. 
+For example, connections from systems on the outside to systems on the inside are forbidden. 
+Connections from the inside to the outside, on the other hand, are generally permitted. 
+However, there may be limitations on the application protocols that are allowed from the inside to the outside. 
+For connectivity from the outside to the DMZ, what is allowed is strictly defined.
+Access is only allowed to the specific ports on specific servers based on the services which are intended to be provided by the server. 
+Also, it is common to be very restrictive on connections that can be made from servers on the DMZ to systems in other zones. 
+If a server on the DMZ is compromised by an attacker, the compromised server should not be allowed to be used as a stepping stone to the inside or to launch attacks against other systems on the outside.
+
+In principle, a firewall can be defined as a system or a group of systems that enforces an access control policy between two or more networking zones.
+That is, the firewall classifies traffic and makes decisions on which traffic to forward and which traffic to deny based on a configured policy.
+Understand that, with this loose definition of a firewall, a firewall can be implemented in various ways.
+
+Some of the options include:
+
+Packet filtering on routers and switches
+Dedicated firewall appliances
+Complex systems integrating multiple hosts and appliances into a firewall system including features such as intrusion protection, application awareness, and content security
+
+
+While the definition provided above is loose, there are some requirements that all firewalls should share:
+
+1) A firewall must be resistant to attacks. 
+   If the firewall is compromised, all the security functions it provides are also compromised. 
+   The firewall itself must be strongly secured.
+  
+  
+2) A firewall must be the only transit point between network zones.
+   If there are alternative paths that exist, attackers may utilize the alternative paths to circumvent the firewall policy.
+
+3) A firewall enforces the access control policy of the organization.
+   The configuration of policy that is enforced by a firewall should not be at the whim of the firewall administrator. 
+   It should instead be based on the central security policies which govern information technology use within an organization.
+   
+There are several benefits to the firewall model.
+Firewalls reduce the complexity of security management by concentrating security functions at the connection points between network security zones.
+A properly designed firewall solution is simple, scalable, and robust.
+
+Various protective measures can be provided by firewalls. Some of them include:
+
+ 1) Reducing exposure of sensitive hosts and applications to untrusted users: Policies between zones will differ based on requirements.
+    Access to a server hosting confidential data may be limited to a set of trusted IP addresses.
+    
+ 2) Protection of protocol flaw exploitation: Different firewall implementations will have different capabilities regarding protocol awareness. 
+    They may have awareness of fragmentation processes at the IP layer, connection state flows at the TCP layer, or control mechanisms at the application layer. 
+    Many firewalls can enforce the compliant behavior of protocols. They can recognize and block malformed packets and recognize other abuses within the protocol data streams.
+   
+Some organizations have the misconception that a modern firewall provides a complete network security solution. 
+In reality, firewalls should be components in the larger security architecture and solution.
+
+Firewalls have many limitations. A few of them include:
+
+1) The fact that firewalls concentrate security administration at the critical junctures between network security zones provides a benefit.
+   But it is also a limitation. A misconfiguration of the firewall can have disastrous consequences, as can a hardware failure. 
+   Configuration of a firewall must be done with great care and attention to detail. 
+   Optimally, high availability features should be used between firewalls to eliminate any single point of hardware failure.
+
+2) Due to being implemented at critical points between network security zones, firewalls can introduce performance bottlenecks. 
+   A firewall must be appropriately sized for traffic that it is expected to forward.
+
+3) Firewalls cannot control data paths that circumvent them. 
+   For example, if an organization implements an insecure wireless network which can be accessed from the parking lot, there is nothing that a firewall can do to prevent that access.
+
+4) As with any security mechanism, if the user community does not understand the policies and views them as oppressive, they may find ways to bypass firewall policy. 
+   For example, they may use a cellular service for Internet access from within the internal network, or they may transfer confidential files to less secure network zones using USB flash drives.
+
+5) A significant number of intrusions are initiated from within the trusted network. 
+   Generally, firewalls can only provide protection between network security zones, not within security zones. 
+   There are some exceptions to this rule, such as the use of VLAN ACLs within a switched network or the use of centrally managed host-based firewalls throughout a network security zone.
+
+########
+
+2) Packet Filters:
+
+The simplest type of firewall is a packet filter. 
+As the name implies, packet filters look at individual packets in isolation. 
+Based on the contents of the packet and the configured policy, they make a permit or deny decision. 
+Packet filters generally have robust options for differentiating desirable and undesirable packets
+
+Common options include:
+
+ 1) Source and destination IP addresses at the network layer.
+ 2) Protocol differentiation at the transport layer: TCP, UDP, ICMP, OSPF, and so on
+ 3) When the transport layer is TCP or UDP, source and destination ports can be specified.
+ 4) When the transport layer is ICMP, types and codes can be specified.
+ 5) When the traffic is TCP, the presence of the ACK bit or the RST bit can be verified. 
+    Under normal TCP connection flow, neither of these bits is ever set in the first packet of a new TCP connection.
+    
+Packet filtering is commonly implemented on Cisco IOS routers and switches. 
+ACLs are used to classify packets. ACLs can be used for various functions on a Cisco IOS router. 
+For example, they can be used to classify which packets are permitted into a priority queue. 
+They can be used to classify which networks an OSPF process will advertise or which network advertisements an OSPF process will accept.
+They can be used to classify which packets will have their forwarding path specified by a policy-based route. 
+When an ACL is applied to an interface with an access-group command, it implements a packet filter.
+
+Consider the following ACL with reference to the topology depicted above:
+
+access-list 100 permit tcp any 10.10.10.10 eq www
+access-list 100 permit tcp any 10.10.10.10 eq 443
+access-list 100 permit tcp any 10.10.10.11 eq www
+access-list 100 permit tcp any 10.10.10.11 eq 443
+access-list 100 permit tcp any 10.10.10.12 eq ftp
+access-list 100 permit tcp any 10.10.10.12 eq ftp-data
+access-list 100 deny ip any any log
+
+The ACL describes a policy of what is permitted and denied from the user subnet to the server subnet. 
+To be effective, it can either be applied inbound on the interface connecting to the user subnet or it can be applied outbound to the interface connected to the server subnet. 
+Some points of interest in this example include:
+
+1) Clients on the user subnet are permitted to send packets to TCP ports 80 and 443 on the two web servers on the server subnet.
+
+2) Clients on the user subnet are permitted to send packets to TCP ports 20 and 21 on the FTP server on the server subnet.
+
+3) Standard FTP will function. Clients establish the control channel by connecting to port 21 on the FTP server.
+   When the client requests a data transfer, it will obtain an ephemeral TCP port from its operating system and convey the appropriate port to the FTP server. 
+   The server will then open a data channel by connecting from TCP port 20 to the specified ephemeral port on the client. 
+   All packets that are sent from the client to the server associated with this data connection will be sent to TCP port 20.
+   
+4) Passive FTP will not function. Clients establish the control channel by connecting to port 21 on the FTP server. 
+   When the client requests a data transfer, it specifies the request as passive. 
+   The server application then requests an ephemeral port from its operating system and communicates the port to the client. 
+   The client then initiates the data channel by connecting to the ephemeral port on the server. 
+   This connection would not be allowed by the ACL as written. 
+   This is a single example of the difficulty packet filters have in handling protocols which use dynamically negotiated connections.
+   
+5) No connections are allowed from the user subnet to the SQL server.
+   The SQL server is there to provide real time data to be presented by the web servers. 
+   Access to the data must be through the interface that is provided by the web servers. 
+   The SQL server is largely protected from the user subnet.
+   
+6) There is an explicit deny for all other packets as the last entry in the ACL. 
+    While this line is not required to deny all packets that were not matched by earlier entries, it does serve two purposes. 
+    First, hit counters are maintained for each line in the ACL. 
+    The administrator can use the show access-list 100 command to view the ACL and each entry’s hit count. 
+    Without the explicit deny, there would be no record of the number of packets that were denied by the ACL. 
+    Also, the explicit deny uses the log argument.
+    This will cause the generation of Syslog messages that are associated with the denies. 
+    This can facilitate central audit trails of rejected traffic.
+    
+Consider the following ACL:
+
+This is a very simple example to demonstrate the utility and the limitations of the established keyword available for TCP access control entries. 
+When the established keyword is specified, the access control entry will match TCP packets between the appropriate IP addresses and TCP ports (in this case any, any), as long as either the ACK bit or the RST bit is set in the TCP header of the packet. 
+In this scenario, the ACL would most likely be applied inbound on the interface that is connected to the untrusted network, but it could also be applied outbound on the interface that is connected to the trusted network.
+
+In this scenario, clients on the trusted network can establish the FTP control channel by connecting to TCP port 21 on the FTP server.
+The connection is initiated with a 3 way handshake. 
+The first packet, sent from the client to the server, only sets the SYN flag in the TCP header and it presents the clients initial sequence number. 
+The server then responds with a packet that has both the SYN bit and the ACK bit set. The server presents its initial sequence number and it acknowledges the clients initial sequence number. 
+The client then completes the three-way handshake with an ACK, acknowledging the server’s initial sequence number. 
+Note that all packets from the server that are associated with this connection have the ACK bit set.
+
+In this scenario, clients on the trusted network can establish the FTP control channel by connecting to TCP port 21 on the FTP server.
+The connection is initiated with a 3 way handshake. The first packet, sent from the client to the server, only sets the SYN flag in the TCP header and it presents the clients initial sequence number. 
+The server then responds with a packet that has both the SYN bit and the ACK bit set. 
+The server presents its initial sequence number and it acknowledges the clients initial sequence number. 
+The client then completes the three-way handshake with an ACK, acknowledging the server’s initial sequence number.
+Note that all packets from the server that are associated with this connection have the ACK bit set.
+
+In this scenario, clients on the trusted network can establish the FTP control channel by connecting to TCP port 21 on the FTP server.
+The connection is initiated with a 3 way handshake.
+The first packet, sent from the client to the server, only sets the SYN flag in the TCP header and it presents the clients initial sequence number. 
+The server then responds with a packet that has both the SYN bit and the ACK bit set.
+The server presents its initial sequence number and it acknowledges the clients initial sequence number. 
+The client then completes the three-way handshake with an ACK, acknowledging the server’s initial sequence number.
+Note that all packets from the server that are associated with this connection have the ACK bit set.
+
+The last thing to point out in this scenario is an example of a limitation of relying on packet filters that reference the TCP flags in the TCP header of packets. 
+Imagine the attacker in the topology wants to start reconnaissance by mapping out the IP addresses of hosts on the trusted side of the packet filter. Note that the ACL will not permit ping via ICMP echo requests. 
+The attacker can, however, make clever use of an “ACK Scan.” Instead of sending an ICMP echo request, the attacker can send a TCP packet with the ACK bit set to a destination address. 
+Since the ACK bit is set, these packets will match the established keyword reference in the ACL and will be permitted. 
+If there is a host present, that host will respond with a TCP Reset (a TCP packet with the RST bit set) in response.
+The attacker can perform the same sort of reconnaissance as it could with ICMP ping.
+If a reset response is received, the IP address is active. If not, the IP address is not active.
+
+
+
+3) Stateful Firewalls:
+
+
+Where a packet filter controls access on a packet-by-packet basis, stateful firewalls control access on a session by session basis.
+This means that the firewall can take into consideration the rules governing sessions at the transport layer and the application layer along with knowledge of what has previously happened within the session to make access control decisions. 
+The data that is associated with what has happened previously within sessions is stored in a state table.
+
+Take TCP for example, where a session is a TCP connection. A TCP connection follows very specific rules. 
+It begins with a three-way handshake. The client sends a SYN packet to the server, presenting its initial sequence number.
+The server responds with a SYN ACK, presenting its initial sequence number and acknowledging the client’s initial sequence number. 
+The client then responds with an ACK, acknowledging the server’s initial sequence number. 
+At this point data transfer begins. As data is sent, sequence numbers raise in accordance with the amount of data sent.
+If packets are lost, retransmissions that follow strict rules can occur.
+Eventually the connection has served its purpose and it will be closed.
+A TCP connection is gracefully closed with an exchange of FIN packets.
+
+
+
+
+   

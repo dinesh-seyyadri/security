@@ -1,0 +1,41 @@
+Task 1
+
+SNMPv3 makes use of engine IDs to uniquely identify each system. 
+The main requirement of the engine ID is that it be unique for each device on the managed network.
+The engine ID is a 24 hexadecimal digit value. 
+The IOS CLI requires that you configure at least 10 digits, and it will append extra zeros if fewer than 24 digits are configured.
+Access the console Rtr-1, access global configuration mode, and define the router’s own (local) engine ID to be 0123456789.
+
+snmp-server engineID local 0123456789
+
+#########
+
+Task 2:
+
+SNMP uses the concept of a Management Information Base (MIB).
+MIBs are databases of status and configuration information that are stored in tree structures.
+A management system requests access to parts of the database by specifying the path that is taken from the root to the data’s location. 
+For example, the path 1.3.6.1.2.1 takes you to MIB-2’s location. 
+From there, there are several branches. 1.3.6.1.2.1.1 is where system data is stored, 1.3.6.1.2.1.2 is where interface data is stored, 1.3.6.1.2.1.4 is where IP data is stored, etc.
+The MIB path is generally referred to as an OID, or Object ID.
+Views can be defined which limit which branches of the tree are available for reading or writing by different SNMP management systems.
+By default, with SNMPv3 on IOS, the entire MIB tree is available for read and nothing is available for write.
+Define an SNMP view, named write-view, which will include access to all branches below 1.3.6.1.2.1.
+
+Rtr-1(config)#snmp-server view write-view mib-2 included
+
+#########
+
+Task 3:
+
+SNMPv3 groups are used to define security settings and privileges that may be used by users who are members of the group. 
+There are three security modes available in SNMPv3:
+ 1) noauth provides no cryptographic security.
+ 2) auth provides data integrity via cryptographic hashes.
+ 3) priv provides data integrity and also adds encryption based privacy.
+ 
+ The syntax for the snmp-server group command is as follows:
+ 
+ snmp-server group group-name { v1 | v2c | v3 { auth | noauth | priv } } [ context context-name ] [ read read-view ] [ write write-view ] [ notify notify-view ] [access [ ipv6 named-access-list ] [ acl-number | acl-name ] ]Configure an SNMP version 3 group named test-group with priv mode security that is provided write authorization as defined by the view named write-view.
+
+

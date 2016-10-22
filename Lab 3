@@ -1,0 +1,360 @@
+Task 1
+
+SNMPv3 makes use of engine IDs to uniquely identify each system. 
+The main requirement of the engine ID is that it be unique for each device on the managed network.
+The engine ID is a 24 hexadecimal digit value. 
+The IOS CLI requires that you configure at least 10 digits, and it will append extra zeros if fewer than 24 digits are configured.
+Access the console Rtr-1, access global configuration mode, and define the router’s own (local) engine ID to be 0123456789.
+
+snmp-server engineID local 0123456789
+
+#########
+
+Task 2:
+
+SNMP uses the concept of a Management Information Base (MIB).
+MIBs are databases of status and configuration information that are stored in tree structures.
+A management system requests access to parts of the database by specifying the path that is taken from the root to the data’s location. 
+For example, the path 1.3.6.1.2.1 takes you to MIB-2’s location. 
+From there, there are several branches. 1.3.6.1.2.1.1 is where system data is stored, 1.3.6.1.2.1.2 is where interface data is stored, 1.3.6.1.2.1.4 is where IP data is stored, etc.
+The MIB path is generally referred to as an OID, or Object ID.
+Views can be defined which limit which branches of the tree are available for reading or writing by different SNMP management systems.
+By default, with SNMPv3 on IOS, the entire MIB tree is available for read and nothing is available for write.
+Define an SNMP view, named write-view, which will include access to all branches below 1.3.6.1.2.1.
+
+Rtr-1(config)#snmp-server view write-view mib-2 included
+
+#########
+
+Task 3:
+
+SNMPv3 groups are used to define security settings and privileges that may be used by users who are members of the group. 
+There are three security modes available in SNMPv3:
+ 1) noauth provides no cryptographic security.
+ 2) auth provides data integrity via cryptographic hashes.
+ 3) priv provides data integrity and also adds encryption based privacy.
+ 
+ The syntax for the snmp-server group command is as follows:
+ 
+ snmp-server group group-name { v1 | v2c | v3 { auth | noauth | priv } } [ context context-name ] [ read read-view ] [ write write-view ] [ notify notify-view ] [access [ ipv6 named-access-list ] [ acl-number | acl-name ] ]Configure an SNMP version 3 group named test-group with priv mode security that is provided write authorization as defined by the view named write-view.
+
+Rtr-1(config)#snmp-server group test-group v3 priv write write-view
+
+#######
+
+
+Task 4:
+
+SNMPv3 users are assigned to SNMPv3 groups. 
+The definition of a user includes a specification of the authentication hash algorithm, the shared key that is used with that algorithm, the encryption algorithm, and the shared key that is used with that algorithm.
+The syntax for the snmp-server user command is as follows:snmp-server user username group-name [remote host [udp-port port] [vrf vrf-name]] {v1 | v2c | v3 [encrypted] [auth {md5 | sha} auth-password]} [access [ipv6 nacl] [priv {des | 3des | aes {128 | 192 | 256}} privpassword] {acl-number | acl-name}]
+Configure an SNMPv3 user named test-user that is assigned to the group named test-group. 
+Configure SHA as the authentication algorithm using auth-pass as the shared key. 
+Also configure 128-bit AES as the encryption algorithm, specifying priv-pass as the shared encryption key.
+
+
+Note the following:
+
+A Syslog message will be displayed that indicates that you should wait. The operation does not take long. Hit Enter to reveal the next router prompt after the message is displayed.
+
+Rtr-1(config)#snmp-server user test-user test-group v3 auth sha auth-pass priv aes 128 priv-pass
+
+#####
+
+Task 5:
+Leave global configuration mode on Rtr-1, and view all the commands in the running configuration that include the string “snmp”.
+
+Rtr-1(config)#do sh run | section snmp
+mmi snmp-timeout 180
+snmp-server engineID local 0123456789
+snmp-server group test-group v3 priv write write-view 
+snmp-server view write-view mib-2 included
+
+
+
+####
+
+Task6:
+
+ show snmp user
+
+User name: test-user
+Engine ID: 0123456789
+storage-type: nonvolatile        active
+Authentication Protocol: SHA
+Privacy Protocol: AES128
+Group-name: test-group
+
+####
+
+Task7 -17:
+
+ManageEngine MibBrowser Free Tool:
+Windows Pc
+
+
+The tool must be configured to communicate with Rtr-1. First, select Edit > Settings. The MibBrowser Settings window opens.
+
+Select v3 in the SNMP Version field, and then click Add below the V3 Settings field. The SnmpParameterPanel window opens.
+
+Target Host: 10.10.10.1
+Target Port: 161
+User Name: test-user
+Security Level: Auth, Priv
+Auth Protocol: SHA
+Auth Password: auth-pass
+Priv Protocol: CFB-AES-128
+Priv Password: priv-pass
+
+Click OK on the SnmpParameterPanel window. Test-user should appear in the table at the bottom of the MibBrowser Settings window.
+Click OK on the MibBrowser Settings window to return to the main application.
+
+In the main window of the MibBrowser application, expand RFC1213-MIB > org > dod > internet > mgmt > mib-2 > system > sysDescr.
+Right-click on sysDescr and click GET.
+
+In the scrolling results pane, you should see that the value of sysDescr.0 contains a description of the operating system running on Rtr-1..
+
+Validate that write operations are also supported. Enter hacked-rtr in the Set Value field in the upper right pane of the MibBrowser Free Tool.
+
+Right-click sysName and select SET. A similar response should appear in the scrolling results field showing the new setting for the sysName.
+
+Return to the console of Rtr-1 and hit Enter to refresh the command prompt. You should now see hacked-rtr# as the prompt.
+
+####
+
+Task 18:
+
+It is now time to look at SNMPv3 traps. Trap destinations are configured using the snmp-server host command. 
+The syntax is as follows:snmp-server host { hostname | ip-address } [ vrf vrf-name | informs | traps | version { 1 | 2c | 3 [ auth | noauth | priv ] } ] community-string [ udp-port port[notification-type] | notification-type ]
+Traps are unsolicited messages that are sent from SNMP-managed devices to SNMP management systems. 
+The management system does not respond to traps. 
+Informs are identical to traps, except that the management system must send a response acknowledging reception of the inform. 
+SNMP managed devices can queue and resend unacknowledged informs. 
+The use of informs requires the configuration of remote engine ID parameters, which goes beyond the scope of this discovery.
+Traps only require the configuration of the local SNMP engine ID, which you have already done.
+Configure the Win-PC (10.10.10.50) as the destination of SNMP traps, specifying that the algorithms and keys that are associated with the SNMP user test-user are to be used.
+Also, enable link up and link down traps to be sent.
+
+
+
+Rtr-1(config)#snmp-server host 10.10.10.50 version 3 priv test-user
+Rtr-1(config)#snmp-server enable traps snmp linkdown linkup
+
+####
+
+Task 19-23
+
+Return to the desktop of the Win-PC. In the MibBrowser Free Tool, select View > Trap Viewer to open the Trap Viewer window.
+Note that there are flashing icons in the lower left-hand corner of the TrapViewer window. 
+Currently the leftmost icon is flashing red. Click the Start button and the middle icon should start flashing green.
+Also note that the status is Listening for Traps.
+Return to the console of Rtr-1. Access interface configuration mode for interface Gi0/2. 
+Shut down the interface, wait for the associated Syslog messages, re-enable the interface, and again wait for the associated Syslog messages.
+
+Return to the desktop of the Win-PC. It may take several seconds, but you should see two traps displayed in the TrapViewer window.
+
+Click Stop and close the TrapViewer window. Leave the main MibBrowser window open.
+
+#########
+Task 24
+
+Configure and Verify the Use of ACLs to Limit Session Sources:
+
+Access to devices using management protocols such as SSH, HTTPS, and SNMPv3 is generally controlled by secret data such as usernames and passwords and shared authentication and encryption keys. 
+The first line of defense is to keep these credentials confidential, make them complex and difficult to crack, and change them regularly. 
+An option for a second line of defense is to restrict the IP addresses that are allowed to access these services on the network devices. 
+If access can be restricted to a controlled set of management stations or management subnets, then it can strengthen security posture that is associated with network management.
+This section of the discovery will look at using ACLs to restrict which addresses are allowed to access Rtr-1 via SNMPv3. 
+You will verify that SNMPv3 access is currently allowed from the Kali-PC and then you will restrict access so SNMPv3 access is only allowed from the Win-PC.
+
+ snmpwalk -v 3 -u test-user -l authPriv -a SHA -A auth-pass -x AES -X priv-pass 10.10.10.1 1.3.6.1.2.1.2
+ 
+ root@kali-pc:~# snmpwalk -v 3 -u test-user -l authPriv -a SHA -A auth-pass -x AES -X priv-pass 10.10.10.1 1.3.6.1.2.1.2
+iso.3.6.1.2.1.2.1.0 = INTEGER: 4
+iso.3.6.1.2.1.2.2.1.1.1 = INTEGER: 1
+iso.3.6.1.2.1.2.2.1.1.2 = INTEGER: 2
+iso.3.6.1.2.1.2.2.1.1.3 = INTEGER: 3
+iso.3.6.1.2.1.2.2.1.1.4 = INTEGER: 4
+iso.3.6.1.2.1.2.2.1.2.1 = STRING: "GigabitEthernet0/0"
+iso.3.6.1.2.1.2.2.1.2.2 = STRING: "GigabitEthernet0/1"
+iso.3.6.1.2.1.2.2.1.2.3 = STRING: "GigabitEthernet0/2"
+iso.3.6.1.2.1.2.2.1.2.4 = STRING: "Null0"
+<…Output Omitted…>
+
+Note the following:
+The snmpwalk command recursively pulls data from the MIB tree, starting from the specified location. What is shown is the MIB-2 interface table.
+
+#######
+
+Task25:
+
+Standard IP ACLs are appropriate to define the trusted IP addresses that are allowed to access network management services on a router.
+When considering, SNMP gets and sets, most aspects of the packet headers are known.
+The protocol is UDP, the destination address is that of the router itself and the destination UDP port is 161. 
+The unknown component is the source IP addresses, and that can be specified with a standard IP ACL.
+Return to the console of Rtr-1 and define a standard IP access-list number 10 which permits the Win-PC, 10.10.10.50.
+
+Rtr-1(config-if)#access-list 10 permit 10.10.10.50
+Rtr-1(config)#
+
+#####
+
+Task26-28:
+
+Update the SNMPv3 group test-group configuration to specify access-list 10.
+#snmp-server group test-group v3 priv write write-view access 10
+
+
+####
+
+
+
+Configure NTP
+
+
+In this section of the discovery exercise, you will configure basic NTP on IOS. 
+You will not yet be concerned with security enhancements. 
+You will configure a hierarchy with Rtr-1 at the top, Rtr-2 underneath Rtr-1, and Rtr-3 underneath Rtr-2.
+You will verify status as you make configuration changes. 
+As you will see, a router that is synchronized with an NTP server is willing to serve NTP itself, but at one stratum level higher.
+You can also have an IOS device synchronize NTP with its internal clock and hence be the root of an NTP hierarchy in an isolated environment.
+
+
+Task 29:
+Use the command ntp master to start NTP on Rtr-1, allowing it to synchronize to its own clock. Verify the status of NTP on Rtr-1 after configuration
+
+Rtr-1>en
+Rtr-1#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-1(config)#ntp master
+Rtr-1(config)#do show clock detail
+16:17:54.487 UTC Thu Oct 30 2014
+Time source is NTP
+Rtr-1(config)#do show ntp status
+Clock is synchronized, stratum 8, reference is 127.127.1.1    
+nominal freq is 1000.0003 Hz, actual freq is 1000.0003 Hz, precision is 2**14
+ntp uptime is 900 (1/100 of seconds), resolution is 1000
+reference time is D7FCE32E.2E2A8BFD (16:17:50.180 UTC Thu Oct 30 2014)
+clock offset is 0.0000 msec, root delay is 0.00 msec
+root dispersion is 7937.72 msec, peer dispersion is 7937.53 msec
+loopfilter state is 'CTRL' (Normal Controlled Loop), drift is 0.000000000 s/s
+system poll interval is 16, last update was 9 sec ago.
+
+############
+
+
+Task 30:
+
+
+Routers have multiple interfaces.
+By default, the source IP address that is used by the router will be that of the interface the router uses to reach the destination.
+As changes in the network can cause the router to use different interfaces to reach the destination, the source IP address can become unpredictable.
+Hence, it is common to configure a loopback interface on a router and use it as the source interface for various protocols. 
+Create the interface loopback 1 and assign it the IP address 10.10.99.1 with a 32-bit subnet mask, and set this interface to be the source interface for NTP.
+
+
+Rtr-1(config)#interface loopback 1
+Oct 30 16:18:57.240: %LINEPROTO-5-UPDOWN: Line protocol on Interface Loopback1, changed state to up
+Rtr-1(config-if)#ip address 10.10.99.1 255.255.255.255
+Rtr-1(config-if)#ntp source lo1
+Rtr-1(config)#
+
+########
+
+Task 31 -55:
+Configure NTP on rtr2 using rtr1
+
+
+
+Rtr-2>en
+Rtr-2#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#interface loopback 1
+*Oct 30 16:21:05.168: %LINEPROTO-5-UPDOWN: Line protocol on Interface Loopback1, changed state to up   
+Rtr-2(config-if)#ip address 10.10.99.2 255.255.255.255
+Rtr-2(config-if)#ntp server 10.10.99.1
+Rtr-2(config)#do show clock detail
+
+#do show ntp status
+#do show ntp associations <detail>
+
+#########
+
+
+Configure and Verify Authenticated NTP:
+
+
+Rtr-1(config)#ntp authentication-key 1 md5 Cisco123!
+Rtr-1(config)#ntp authenticate
+
+
+Rtr-2(config)#ntp trusted-key 1
+Rtr-2(config)#ntp authenticate
+Rtr-2(config)#ntp server 10.10.99.1 key 1
+
+
+####
+
+Linux systems often support the ntpdc command to make queries of NTP servers. Enter the command ntpdc –c monlist 127.0.0.1 to send a GET_MONLIST request to the local system.
+ntpdc -c monlist 127.0.0.1
+
+####
+
+Task 56
+
+Configuring and Verifying Syslog on IOS:
+
+show logging
+
+Note the following:
+
+1) Syslog is enabled.
+2) Logging to the console is enabled for messages at the debug level and above. 
+   The number of messages that you see logged will likely differ from the sample transcript.
+   
+3) Logging to the monitor is also enabled, but 0 messages have been logged. 
+  Monitors are SSH or Telnet sessions to the VTY lines in which the terminal monitor command has been issued. 
+  While it is enabled, it has not yet been utilized.
+  
+4) Logging is enabled to the local buffer. 
+   It is likely that the same number of messages have been logged to the local buffer as to the console.
+   
+5) After the status of the logging facilities is displayed, the messages in the local buffer are displayed, in chronological order. 
+   The sample transcript only shows the first 4 messages. 
+   If you use the space bar to page through the output, you will likely see messages that are associated with the booting of Rtr-1, followed by the messages that are associated with the activities you have completed during this discovery activity.'
+  
+Rtr-1(config)#logging source-interface lo1  
+Rtr-1(config)#logging host 10.10.10.60 
+Rtr-1(config)#no logging console
+
+Access the desktop of the Kali-PC. Using the terminal window, change directory to /var/log and then display the contents of the file networking.log.
+
+
+root@kali-pc:~# cd /var/log
+root@kali-pc:/var/log# cat networking.log
+<…Messages associated with the NTP server running on the Kali-PC omitted…>
+Oct 30 20:14:22 10.10.99.1 58: Oct 30 20:14:02.379: %LINK-5-CHANGED: Interface Loopback1, changed state to administratively down
+Oct 30 20:14:22 10.10.99.1 59: Oct 30 20:14:03.379: %LINEPROTO-5-UPDOWN: Line protocol on Interface Loopback1, changed state to down
+Oct 30 20:14:22 10.10.99.1 60: Oct 31 01:18:05.965: %LINK-3-UPDOWN: Interface Loopback1, changed state to up
+Oct 30 20:14:22 10.10.99.1 61: Oct 30 20:14:06.965: %LINEPROTO-5-UPDOWN: Line protocol on Interface Loopback1, changed state to up
+Oct 30 20:14:26 10.10.99.1 63: Oct 30 20:14:11.034: %SYS-5-CONFIG_I: Configured from console by console
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

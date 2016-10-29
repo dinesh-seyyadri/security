@@ -214,6 +214,130 @@ Eventually the connection has served its purpose and it will be closed.
 A TCP connection is gracefully closed with an exchange of FIN packets.
 
 
+Given an understanding of session rules along with the state table, stateful firewalls can ensure that those rules are followed. 
+Network attacks often break rules, confusing systems and causing them to behave in unintended fashions.
+When stateful firewalls recognize rules being broken, they will drop offending packets and mitigate the attack.
+Take for example TCP connections. The connection must begin with a SYN packet. 
+If the policy on the firewall allows the session, the SYN packet is allowed and a new entry in the state table is created. 
+The state table stores information such as the source and destination IP addresses and TCP ports, TCP flags, and sequence numbers. 
+At this point, there is only one valid packet that can follow in this session. 
+It is the server’s SYN ACK packet in response to the client’s SYN, and it needs to be acknowledging the actual sequence number that was originally presented by the client. 
+Any violations of the TCP protocol are rejected. 
+Take the example of an ACK scan that was presented in the Packet Filter discussion. 
+An ACK scan is a reconnaissance method which is effective against a packet filter that permits “established” packets. 
+However, an ACK scan is mitigated by a stateful firewall. An independent ACK packet breaks the rules of TCP.
+When a stateful firewall sees an ACK packet that does not match any valid TCP connection in the state table, the illegitimate ACK packet will be dropped.
+
+Stateful firewalls can also provide stateful inspection of applications that utilize a control channel to facilitate dynamically negotiated connections.
+Voice over IP applications are common examples in modern networks. FTP is another example. 
+With FTP, the client connects to the server on TCP port 21, which is the control channel. 
+When the client requests data, a new data channel is opened. This is a dynamically negotiated TCP connection. 
+There are two modes for the FTP data transfer process. In active mode, the client specifies a TCP port number when making a data request. 
+The server then initiates connects from source port 20 to the destination port specified by the client. 
+In passive mode, the client requests a passive transfer and the server responds with a port number. 
+The client then initiates the dynamic connection by connecting to the destination port specified in the server response.
+
+A stateless packet filter has trouble dealing with FTP. 
+Take a packet filter between a trusted inside network and an untrusted outside network. 
+If the packet filter allows all packets from the inside to the outside, and it allows TCP packets with the ACK bit set from the outside to the inside, then passive mode FTP will function. 
+All connections originate from the inside, and all return packets have the ACK bit set. 
+But what if you need to control which applications are allowed to connect to the outside from the inside?
+Since the destination port that is used for passive mode connections is unpredictable, you can’t limit destination ports. 
+Similarly, take an example of a packet filter between a DMZ environment and the public Internet, again with passive FTP. 
+It is best practice to strictly limit the connections that are allowed to be established from DMZ servers to the Internet. 
+If a DMZ server is compromised, you don’t want an attacker to be able to leverage your DMZ servers to attack other systems on the Internet. 
+But, since the destination port for Passive FTP is unpredictable, you can’t limit destination ports outbound from an FTP server with a packet filter.
+The problems are similar, but reversed for active mode FTP. 
+Active mode FTP transfers use unpredictable destination ports on the client side.
 
 
+But stateful firewalls can monitor the control channel of FTP sessions.
+When a data connection is negotiated between the client and the server, the stateful firewall can populate the state table with an entry to allow that connection. 
+For a passive connection, it can populate the state table to expect a TCP SYN from the client to the server on the destination port that the server specified. 
+For an active connection, it can populate the state table to expect a TCP SYN from the server, source port 20 to the client on the destination port specified by the client. 
+The state table is then dynamically updated after each packet, through the three-way handshake, the data transfer, and the two-step FIN exchange.
+
+
+Like stateless packet filters, ACLs are used to configure access control policy stateful firewalls.
+But, where the ACLs are referenced packet by packet on a stateless packet filter, they are only referenced session by session on a stateful firewall.
+For example, when a TCP SYN packet is received by a stateful firewall, it checks the ACL configuration to determine if it should allow the connection. 
+If it is a permitted connection, then an entry is created in the state table. 
+The state table now controls the bidirectional flow of all other packets that are associated with that connection.
+Any non-SYN TCP packet is processed against the state table, not the ACLs. 
+If there is a matching entry in the state table, then the packets are allowed. 
+If there is not a matching entry in the state table, the packets are dropped. 
+This behavior is evident when you examine the hit counters on ACL entries. 
+On a stateless packet filter, the counters increase quickly as they are incremented packet by packet. 
+On a stateful packet filter, the counters increment much more slowly as they only increment on the creation of new connections.
+
+
+4)Proxy Servers:
+
+A third firewall technology is a proxy server, also known as an application layer gateway. 
+Unlike packet filtering firewalls and stateful firewalls, a proxy server does not act as a Layer 3 forwarder. 
+Instead it acts as a Layer 3 termination point.
+When a proxy server is used as a primary path between two networks, it has an interface in both networks.
+When a client in one network needs to connect to a server in the other network, it connects to the proxy server and the proxy server connects to the other network. 
+This means that there are two separate connections. 
+The server does not see a connection from the client. It sees a connection from the proxy server.
    
+
+The limitation of a proxy server is that it needs to have special coding on a per-application basis.
+Given the wide variety of network applications, this is very difficult for the firewall vendor to implement.
+Also, to make the use of the proxy transparent to the end user, the client application may need to have special coding as well.
+
+This limitation, however, can be turned to an advantage when proxy servers are used for particular, high value applications.
+In today’s networks, it is common to pair a stateful firewall with a proxy server that specializes in web applications. 
+In this case, the stateful firewall explicitly denies HTTP and HTTPS from the internal network to the Internet. 
+It only allows HTTP and HTTPS from the internal network to the proxy server and from the proxy server to the Internet, which forces all HTTP and HTTPS traffic to go through the proxy server.
+Other applications, however, are controlled by the stateful firewall itself.
+
+The proxy server vendor can focus on value-added features that are appropriate to web services and not have to worry about all the other protocols that will run through the stateful firewall.
+Common services include URL classification and web application identification.
+With these features, organizations can enforce policies that align with business goals.
+For example, they may deny access to gambling sites and limit the number of hours that an employee can access personal banking applications.
+
+
+5)Next-Generation Firewalls:
+
+The term “next-generation firewall” has gained a foothold in network security lingo, even though the definition must be a moving target.
+What is considered a next-generation firewall today will not be the same as what is considered a next generation firewall in a few years. 
+Different vendors will package different sets of features into their next-generation firewalls.
+
+Features that may be included in a next generation firewall include:
+
+
+
+ 1) URL Filtering: This feature moves the most commonly used proxy server function into the firewall itself, and may take advantage of URL classification and web site reputation scores
+
+ 2) Application Visibility and Control: This feature recognizes applications by analyzing data streams instead of looking at transport layer port numbers. 
+    For example, applications like Skype that are capable of hopping from one port to another can be recognized. 
+    Another example is not only recognizing Facebook, but recognizing gaming within Facebook.
+
+ 3) Context Awareness: Who is connecting, to what, from where, using which device, at what time? 
+    Policy can be defined that allows members of the marketing team to access Facebook for marketing purposes, but even they are not allowed to access Facebook games. 
+    Also, what a user can access via their corporate managed laptop and what they can access via their personal mobile phone may differ.
+
+ 4) Intrusion Prevention System: Again, something that has traditionally been handled by separate systems can now be integrated directly into a firewall appliance, and it can be made even more powerful by utilizing the contextual awareness that is integrated into the next generation firewall.
+
+ 5) Advanced Malware Protection: This feature can provide detection, blocking, tracking, analysis, and remediation.
+########################### 
+
+
+6) Logging in ASA:
+
+
+An introductory discussion of firewalling must include the concept of logging. 
+Firewalls can generate very high volumes of logging data. 
+By default, a Cisco ASA provides audit logs of all sessions that it allows in the state table and of all dropped packets.
+Next-generation services such as IPS, malware protection, and identity services add even more volume.
+This data is very important. Analyzing the data in real time can recognize networking attacks as they develop.
+Analyzing historical data is part of the forensics that are involved in incident response. Firewall data should be logged. 
+Compliance with regulatory standards often requires logs to be maintained for extended periods of time. 
+This must be well thought out and implemented. 
+Centralized logging servers must be provisioned and maintenance plans must be put in place. 
+The tremendous volumes of log data make manual monitoring and analysis unfeasible. 
+Tools to aid in monitoring and analysis should be implemented. 
+In larger organizations, logs are received from many systems, not just the firewalls.
+In such cases, larger security information and event management procedures are appropriate.
+

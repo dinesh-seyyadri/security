@@ -1,0 +1,155 @@
+1) Introducing the Cisco ASA Family of Security Appliances
+2) Cisco ASA Firewall Features
+3) Modes of Deployment
+4) High Availability and Failover
+5) Security Contexts
+6) Configuring Management Access on the ASA
+7) Configuring Cisco ASA Interfacese Cisco ASA
+8) NAT Fundamentals
+9) Configure NAT on Cisco ASA
+10) Verify NAT Operations
+
+
+1) Introducing the Cisco ASA Family of Security Appliances:
+
+The Cisco Adaptive Security Appliances are purpose-built solutions that integrate firewall, unified communications security, VPN, IPS, and content security services in a unified platform.
+The Cisco ASA is fundamentally a stateful packet filter with Application Inspection and Control, with a rich set of additional integrated software and hardware features that enables you to expand its functionality beyond those fundamental access control mechanisms.
+
+
+The Cisco ASA adaptive security appliance provides intelligent threat defense that stops attacks before they penetrate the network perimeter, controls network and application activity, and delivers secure remote access and site-to-site connectivity. 
+This multifunction network security appliance family provides security breadth, precision, and depth for protecting business networks of all sizes, while reducing the overall deployment and operations costs that are associated with implementing comprehensive multilayer security.
+
+Cisco offers several models of the Adaptive Security Appliance to meet customer needs ranging from remote/teleworker to high-end data center models.
+
+Cisco ASAv Virtual Adaptive Security Appliance:
+
+The Cisco ASAv runs as a VM inside a hypervisor in a virtual host as depicted in the diagram. Most of the features that are supported on a physical Cisco ASA by Cisco ASA software are supported on Cisco ASAv as well, except for clustering and multiple contexts.
+Cisco ASAv supports site-to-site VPN, remote-access VPN, and clientless VPN functionalities as supported by physical Cisco ASA devices.
+
+
+The Cisco ASAv comes in different models to meet customer needs:
+Cisco ASAv5: Consumes up to 2 GB of memory and delivers up to 100 Mbps of throughput.
+Cisco ASAv10: Consumes up to 2 GB of memory and delivers up to 1 Gbps of throughput.
+Cisco ASAv30: Consumes up to 8 GB of memory and delivers up to 2 Gbps of throughput.
+
+2) Cisco ASA Firewall Features:
+
+
+The heart of the security appliance is an application-aware stateful packet inspection algorithm, which controls flows between networks that are controlled by the security appliance.
+
+The connection-oriented stateful packet inspection algorithm design creates session flows based on source and destination addresses and ports.
+The algorithm randomizes TCP sequence numbers, port numbers, and additional TCP flags before completion of the connection.
+This function is always in operation, monitoring return packets to ensure that they are valid, and it transparently allows any additional dynamic transport layer sessions of the same application session. 
+This fundamental function of the Cisco Adaptive Security Appliance (ASA) allows you to minimize host and application exposure and allow only the minimal traffic on OSI network and transport layers that is required to support your applications.
+
+The Cisco ASA security appliance also provides rich AIC services, enabling you to verify the conformance of application layer protocols and prevent many tunneling attempts and application layer attacks that violate protocol specifications.
+The Cisco ASA security appliance includes support for many different flavors of NAT, including inside and outside NAT, policy (destination-sensitive) NAT, one-to-one and one-to-many NAT, and port forwarding (static PAT).
+The Cisco ASA security appliance supports rich IP routing functionality for both static and dynamic routing. It integrates with IPv6 networks natively, to provide access control between IPv6 security domains.
+The Cisco ASA security appliance integrates a DHCP server and client. It natively integrates with multicast networks using the IGMP and the PIM approach to integrate into multicast networks. The Cisco ASA security appliance supports both PIM-SM and bidirectional PIM.
+
+
+
+3) Modes of Deployment:
+
+
+The Cisco Adaptive Security Appliance (ASA) offers different modes of deployment. 
+The modes are known as routed mode and transparent mode.
+The mode of deployment that is used will depend upon your network requirements and needs.
+
+The modes of deployment have the following characteristics:
+
+a) Routed mode: The Cisco ASA security appliance supports RIP (versions 1 and 2), OSPF, EIGRP, and BGP dynamic routing protocols to integrate into existing routing infrastructures. 
+Where dynamic routing is not available, the Cisco ASA security appliance can use static route tracking to determine neighbor or path health instead.
+
+b) Transparent (bridged) mode: The Cisco ASA security appliance includes the ability to operate in a secure bridging mode as a Layer 2 device to provide rich OSI Layers 2 through 7 security services for the protected network.
+This ability enables businesses to deploy security appliances into existing network environments without requiring readdressing of the network. 
+Although the security appliance can be invisible to devices on both sides of a protected network, you can manage it via a management IP address (which can be hosted on a separate management interface, if required). 
+
+4) High Availability and Failover:
+
+
+The Cisco Adaptive Security Appliance (ASA) has three redundancy options to provide for maximum uptime and system availability.
+
+a) Active/Standby failover model: only one security appliance actively processes user traffic, while the other unit acts as a hot standby, prepared to take over if the active unit fails.
+
+b) Active/Active failover model: both security appliances can actively process user traffic and can tolerate the failure of one device in the failover cluster.
+
+c) Clustering: this feature lets you group multiple ASAs as a single logical device. A cluster provides all the convenience of a single device (management, integration into a network) while achieving the increased throughput and redundancy of multiple devices.
+
+You can also configure the security appliance with redundant interfaces to increase security appliance reliability. 
+This feature is separate from the device-level failover, but you can use redundant interfaces and failover in the same configuration.
+A redundant interface provides intra-device, physical interface-level redundancy by pairing two physical interfaces.
+In all three redundancy scenarios, the security appliance supports the maintenance of state table redundancy, so that network connections are not disrupted when a failure occurs.
+
+5) Security Contexts:
+
+You can partition a single Cisco Adaptive Security Appliance (ASA) into multiple virtual firewalls that are known as security contexts.
+Each context is an independent firewall with its own security policy, interfaces, and administrators. 
+Having multiple contexts is like having multiple standalone firewalls. 
+You must first configure the security appliance that will host multiple security contexts into “multiple mode” to support virtualization. Most of the single-mode Cisco ASA security appliance features are also supported in multiple-context mode, including static routing, select dynamic routing protocols, access control features, security modules, and management features.
+
+
+6) Configuring Management Access on the ASA:
+
+
+Some of the first steps in deploying the Cisco Adaptive Security Appliance (ASA) are to establish CLI and Cisco Adaptive Security Device Manager (ASDM) access.
+
+note:
+Cisco ASDM is a GUI configuration tool that is designed to facilitate the setup, configuration, monitoring, and troubleshooting of Cisco ASA security appliances.
+The application hides the complexity of commands from administrators, and allows simplified configurations without requiring extensive knowledge of the security appliance CLI.
+
+
+
+Cisco ASA appliances contain a CLI command set that is based on Cisco IOS Software. The appliance provides five configuration modes, similar to Cisco IOS devices:
+
+1) ROM monitor: A special mode that allows you to update the ASA image over the network or perform password recovery.
+2) User EXEC mode: Available when first accessing the ASA. Provides a restricted view of the security appliance settings.
+3) Privileged EXEC mode: Enables changing of current settings.
+4) Global configuration mode: Enables changing of system configurations.
+5) Specific configuration modes: Enables changing of configurations that are specific to part of the security appliance. 
+For example, interface settings.
+
+For initial configuration of the security appliance, access the CLI directly from the console port. 
+Later, you can configure remote access using Telnet or SSH.
+
+To identify the client IP addresses allowed to connect to the ASA using Telnet, perform the following configuration step from global configuration mode:
+
+ ciscoasa(config)# telnet source_IP_address mask source_interface 
+ 
+ Telnet is not a secure method of access. Cisco recommends using SSH for accessing the appliance CLI.
+ 
+To gain access to the ASA CLI using Telnet, enter the login password set by the password command.
+You must manually set the password before using Telnet.
+
+To use ASDM and SSH connection access, you need to enable SSH and the HTTPS server on the security appliance. 
+HTTPS access is enabled as part of the factory default configuration or when you use the setup command.
+This section describes how to manually configure SSH and ASDM access.
+
+
+The following example shows how to enable the HTTPS server and let a host on the inside interface with an address of 192.168.1.2 access ASDM. 
+Note, there can be some confusion when looking at this command. 
+The command is http, but the protocol it enables is HTTPS. 
+The example also shows how to enable SSH access from the host 192.168.1.2 on the inside interface of the ASA.
+Also included commands to create a local database user and enable local user authentication. To perform this step, use the following commands
+
+ciscoasa(config)# http server enable
+ciscoasa(config)# http 192.168.1.2 255.255.255.255 inside 
+ciscoasa(config)# ssh 192.168.1.2 255.255.255.255 inside
+ciscoasa(config)# username name password password encrypted privilege priv_level
+ciscoasa(config)# aaa authentication http console LOCAL
+ciscoasa(config)# aaa authentication ssh console LOCAL
+
+The LOCAL keyword for the aaa authentication console command is case sensitive.
+
+To access the security appliance with ASDM, use a web browser and navigate to https://ip_address (the configured IP address).
+You will then be given an option to proceed or download the ASDM Launcher to your desktop. Enter the configured username and password to gain access.
+To access the security appliance using SSH, use a SSH client. Enter the configured username and password to gain access.
+
+
+
+
+
+
+
+
+

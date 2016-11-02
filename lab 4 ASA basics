@@ -393,8 +393,86 @@ This will add an access control entry that permits TCP traffic from any IP addre
 
 
 
+57)
 
+Click OK. The Add Access Rule window closes.
+The Access Rules table should now show two incoming rules that are applied to the outside interface
 
+58)
+
+Click Apply. The Preview CLI Commands window displays the commands which will be sent to the ASA. Verify the commands. 
+If they are correct, click Send. If not, click Cancel and retrace your steps.
+
+59)
+
+Access the desktop of Kali-21. Use the Terminal window to establish a Telnet connection to Kali-11 (10.10.10.11). 
+Authenticate as guest with the password guest
+
+60)
+
+The Telnet client is showing the Kali-11 command prompt.
+Enter “This will result in a command not found message, but it generates a lot of Telnet packets.”
+
+61)
+
+Use the exit command to terminate the Telnet connection.
+
+62)
+
+Access the Admin-PC desktop. 
+ASDM’s Access Rules table should still be displayed.
+Examine the Hits counter column for the line that permits inbound Telnet.
+You should see that there is only one hit. 
+Even though there were many packets, there was just one connection that was processed against this ACL entry.
+
+63)
+
+Now repeat this experiment on the Rtr-2 side of the topology. Access the console of Rtr-2. First display the existing Outside-In ACL.
+Answer
+
+Rtr-2#show access-list
+Extended IP access list Outside-In
+    10 permit tcp any any established (891 matches)
+    20 permit icmp any any echo-reply (26 matches)
+    30 permit tcp any any eq ftp (4 matches)
+    
+64)
+
+To avoid any interaction with the current line #10, insert a line permitting inbound Telnet at line number 5 in the Outside-In ACL.
+
+Rtr-2#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#ip access-list extended Outside-In
+Rtr-2(config-ext-nacl)#5 permit tcp any any eq telnet
+Rtr-2(config-ext-nacl)#end
+*Dec  8 19:08:00.262: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-2#
+
+65)Review the ACL contents.
+
+Rtr-2#show access-list
+Extended IP access list Outside-In
+    5 permit tcp any any eq telnet
+    10 permit tcp any any established (891 matches)
+    20 permit icmp any any echo-reply (26 matches)
+    30 permit tcp any any eq ftp (4 matches)
+    
+66)
+Access the desktop of Kali-22 and use the terminal window to establish a Telnet connection to Kali-12 (10.10.10.12). 
+Authenticate as guest with the password guest.
+
+67)
+
+The Telnet client is showing the Kali-12 command prompt. 
+Enter “This will result in a command not found message, but it will generate a lot of Telnet packets.”
+
+68)
+
+Use the exit command to terminate the Telnet connection.
+
+69)
+
+Return to the console of Rtr-2. Review the ACL one more time and observe the hit counter that is associated with the line permitting inbound Telnet.
 
 
 

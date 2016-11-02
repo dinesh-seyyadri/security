@@ -31,3 +31,375 @@ Navigate to Configuration > Device Setup > Interfaces. Examine the interface con
 
 Access the desktop of Kali-11. 
 Open the Iceweasel web browser and attempt to browse Kali-21 (10.10.20.21). Kali-21’s web page should display successfully
+
+10)
+
+Access the desktop of Kali-11. 
+From the Terminal window, establish a Telnet connection to Kali-21 (10.10.20.21). Authenticate as guest with the password guest.
+
+11)
+
+Access the desktop of Kali-11. From the Terminal window, establish a Telnet connection to Kali-21 (10.10.20.21). 
+Authenticate as guest with the password guest.
+
+12)
+
+Access the PuTTY session to the ASA from the Admin-PC desktop.
+Enter the show conn command to view the ASA’s connection table.
+
+13)
+
+Note the following:
+There is one TCP connection between 10.10.20.21 port 23 and an ephemeral port on 10.10.10.11. The flags (UIO) provide the following information about the state of connection:
+U: The three-way handshake has completed and the connection is up.
+I: Inbound data has been forwarded.
+O: Outbound data has been forwarded.
+The TCP SYN from the inside to the outside is what allowed this connection to enter the connection table.
+As long as the rules of TCP are followed, packets that are associated with this connection can be sent bidirectionally between 10.10.20.21 and 10.10.10.11. 
+Anything that breaks the rules of TCP, however, will be dropped.
+
+14)
+Return to ASDM on the Admin-PC. Navigate to Monitoring > Logging > Real-Time Log Viewer, and click the View button. 
+ASDM’s Real-Time Log Viewer window opens
+
+15)
+
+Access the desktop of Kali-11. From the terminal window, attempt to ping Kali-21 (10.10.20.21).
+Even though this is from the inside to the outside, the ping attempts will fail because the ICMP echo replies from Kali-21 to Kali-11 will be dropped. 
+After waiting a few seconds, use Ctrl-C to terminate the ping.
+
+16)
+
+Return to the Real-Time Log Viewer on the Admin-PC. Examine the entries in the table. 
+There should be several messages that are associated with denials of inbound ICMP packets.
+
+17)
+
+Examine the protocols that the ASA inspects by default.
+Access the main ASDM window and navigate to Configuration > Firewall > Service Policy Rules.
+The service policy rules table is displayed.
+
+18)
+
+There is only one policy in the table, currently. It is named global_policy and it is applied globally. 
+It includes only one class of traffic named inspection_default. 
+Select inspection_default and click Edit. The Edit Service Policy Rule window opens.
+
+19)
+
+Select the Rule Actions tab. You will see many options available.
+Most are TCP applications. You will explore inspecting application traffic later in this discovery exercise.
+
+20)
+
+Note that ICMP is not checked by default. Click the ICMP check box and click OK. The Edit Service Policy Rule window closes.
+
+21)
+
+Click Apply at the bottom of ASDM. The Preview CLI Commands window displays the commands that will be sent to the ASA. 
+Verify the commands. If they are correct, click Send. If not, click Cancel and retrace your steps.
+
+22)
+
+Now that ICMP inspection is enabled, outbound ICMP echoes will result in an entry in the state table, and the ASA will allow the corresponding inbound ICMP echo replies. 
+Verify this. Access the Terminal window on Kali-11 and reattempt the ping to Kali-21. Again, use Ctrl-C to terminate the ping.
+
+
+############## IOS – Permit “Established” Connections #########
+
+Packet filtering firewalls have the ability to examine the TCP flags in a TCP packet and make forwarding decisions based on those flags. 
+IOS ACLs allow the keyword established to be included on TCP-oriented access control entries. 
+For a packet to match the established keyword, it must have either the TCP ACK bit or the TCP RST bit set. 
+In a normal TCP connection, the only packet that will not have the ACK bit set is the first packet in the three-way handshake.
+The established keyword can be leveraged in different ways. 
+The scenario that you will create is to permit TCP established on Rtr-2’s 10.10.20.2 interface. You will also permit echo replies, which normally only follow the reception of an echo request. With just those two permits in the ACL, all other traffic is denied.
+The resulting behavior will have some similarities to what is on the ASA. 
+If the first packet in the TCP connection originates from the inside, then all return packets will have the ACK bit set and be allowed.
+However, if the TCP connection originates from the outside, the first packet will not have the ACK bit set and will be denied. 
+In this case, the connection cannot even get started.
+
+23)Access the console of Rtr-2. Use the enable command, specifying cisco as the password.
+
+24)Create an IP extended ACL named Outside-In. Set the first line to permit TCP established packets between any two IP addresses.
+Set the second line to permit ICMP replies between any two IP addresses. 
+Other traffic, such as UDP traffic, echo requests, and TCP traffic without the ACK or RST bits set will be implicitly denied.
+
+
+Rtr-2#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#ip access-list extended Outside-In
+Rtr-2(config-ext-nacl)#permit tcp any any established
+Rtr-2(config-ext-nacl)#permit icmp any any echo-reply
+
+25)Apply this ACL, inbound, to Rtr-2’s 10.10.20.2 interface (Gi0/2).
+
+Rtr-2(config-ext-nacl)#int g0/2
+Rtr-2(config-if)#ip access-group Outside-In in
+Rtr-2(config-if)#end
+*Dec  8 16:05:35.574: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-2#
+
+26)Verify the behavior between Kali-12 and Kali-22. Access the desktop of Kali-12 and use the Iceweasel browser to browse Kali-22 (10.10.20.22).
+You should be able to browse Kali-22 because the return traffic has the ACK bit set.
+
+27)
+From the terminal window on Kali-12, ping Kali-22 (10.10.20.22). 
+The ping should succeed. The return packets are ICMP echo replies.
+
+28)
+
+Access the desktop of Kali-22 and use the Iceweasel browser to browse Kali-12 (10.10.10.12). This should fail. The initial connection packet, without the ACK bit set, is not permitted by the ACL.
+
+
+29)
+
+From the Terminal window on Kali-22, ping Kali-12 (10.10.10.12).
+The ping should fail. The ICMP Echo packets are not permitted by the ACL.
+
+30)
+
+From the terminal window on Kali-22, use nmap to perform an ACK scan (-sA) against the 10.10.10.0/24 subnet.
+Kali-12 (10.10.10.12) should be detected in the scan.
+
+nmap -sA 10.10.10.0/24
+
+31)
+
+Kali-12 was found by the ACK scan, but why was Kali-11 not found? It’s because Kali-11 uses ASA-1 as its default gateway. 
+Rtr-2 actually allowed the ACK packet to Kali-11, but ASA-1 blocked the TCP reset in the outbound direction. 
+Access the desktop of the Admin-PC and examine the Real-Time Log Viewer window. 
+You should see that TCP packets from 10.10.10.11 (Kali-11) and 10.10.10.50 (Admin-PC) were dropped because they were not associated with a valid TCP connection. 
+Again, the ASA does not simply allow packets from the inside to the outside. It allows valid connections from the inside to the outside.
+
+32) -34 --ASA Real time log viewer
+
+#############################
+
+FTP Through a Packet Filter:
+
+Most stateful firewalls have the ability to not only track transport layer characteristics, but also certain application layer characteristics.
+Modern “next-generation” firewalls can even determine and differentiate applications based on data and not TCP ports. 
+For example, they might recognize Facebook as an application on non-web ports and also be able to differentiate between Facebook games and other Facebook traffic. 
+But even the simplest stateful firewalls usually have the ability to inspect common TCP applications and recognize when an application spawns dynamically negotiated connections. 
+Similar to allowing bidirectional packet flow when the rules of TCP are followed, stateful firewalls allow dynamically negotiated connections as long as the rules of the application protocol are followed.
+
+FTP is a classic example of such an application, and it is one that is easy to demonstrate in a lab environment.
+An FTP server listens on TCP port 21 for client connections. 
+A connection to TCP port 21 on the FTP server is the control connection. 
+Any requests for data within the FTP control connection are serviced by a dynamically negotiated data connection.
+The client can either request an active mode data connection, where the server initiates the connection or a passive mode data connection, where the client initiates the connection. 
+For an active mode connection, the client specifies a TCP port and the server connects back to that port on the client using TCP port 20 as the source port.
+For a passive mode connection, the client makes the request to the server and the server replies with a dynamic TCP port number. 
+The client then connects from a dynamic local port to the port number specified by the server. 
+A stateful firewall can observe these negotiations and securely support the dynamically negotiated connections. 
+A packet filtering firewall is at a disadvantage with any application that uses dynamically negotiated connections.
+
+In this section of the discovery, you will configure Rtr-2 to allow inbound FTP control connections. 
+Rtr-2 already supports outbound TCP connections of any kind. 
+You will then explore the behavior and demonstrate the packet filter limitations.
+
+35)
+Access the console of Rtr-2.
+Add one entry to the Outside-In ACL that permits TCP packets between any two IP addresses as long as the destination port is 21.
+
+Rtr-2#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Rtr-2(config)#ip access-list extended Outside-In    
+Rtr-2(config-ext-nacl)#permit tcp any any eq 21
+Rtr-2(config-ext-nacl)#end
+*Dec  8 17:17:17.948: %SYS-5-CONFIG_I: Configured from console by console
+Rtr-2#
+
+36)
+
+Establish an FTP connection from Kali-22 to Kali-12 and attempt a passive mode transfer.
+This should succeed. The passive mode data connection originates from Kali 12 on the inside, so the return packets will have the ACK bit set.
+The response to a request for a directory listing requires a data connection, so the test can be implemented with simply a dir command from within the FTP session. 
+Also, the Kali FTP client defaults to active mode transfer. Access the desktop of Kali-22 and use the terminal window to establish an FTP connection to Kali-12 (10.10.10.12).
+Log in as anonymous. Use the dir command to retrieve a directory listing.
+
+
+root@Kali-22:~# ftp 10.10.10.12
+Connected to 10.10.10.12.
+220 (vsFTPd 2.3.5)
+Name (10.10.10.12:root): anonymous
+331 Please specify the password.
+Password: <any password>
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp> dir
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+-rw-r--r--    1 0        0        104857600 May 23  2013 OneHundredMB.bin
+-rw-r--r--    1 0        0            1024 May 23  2013 OneKB.bin
+-rw-r--r--    1 0        0         1048576 May 23  2013 OneMB.bin
+-rw-r--r--    1 0        0        10485760 May 23  2013 TenMB.bin
+drwxr-xr-x    2 0        0            4096 May 02  2014 etc
+drwxr-xr-x    2 0        0            4096 May 02  2014 files
+drwxr-xr-x    2 0        0            4096 May 02  2014 private
+226 Directory send OK.
+ftp>
+
+37)
+You can toggle between active and passive mode with the Kali FTP client using the passive command.
+Use the passive command to toggle passive mode on.
+
+ftp> passive
+Passive mode on.
+
+38)
+
+Attempt the dir command again. 
+Since the passive mode connection will be from the outside to an ephemeral port on Kali-12, Rtr-2 will not allow the “non-established” TCP SYN packet to start the three-way handshake. The connection is refused.
+39)
+Terminate the FTP client on Kali-22 with the bye command.
+
+40)
+
+Access the desktop of Kali-12.
+Use the terminal window to repeat the FTP experiments that are performed from Kali-22. 
+You will find that the results are reversed. Passive mode will succeed while active mode will fail. 
+Establish an anonymous FTP to Kali-22 (10.10.20.22).
+
+
+root@Kali-12:~# ftp 10.10.20.22
+Connected to 10.10.20.22.
+220 (vsFTPd 2.3.5)
+Name (10.10.20.22:root): anonymous
+331 Please specify the password.
+Password: <any password>
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp>
+
+41)
+
+Use the dir command to attempt an active mode transfer. 
+The server will attempt to connect back from TCP port 20 to a high numbered port specified by the client. 
+Rtr-2 will not allow the associated TCP SYN packet and hence the connection is not allowed.
+
+42)
+
+Use the passive command to toggle passive mode on.
+Now the data connection will initiate from the inside, so return packets will have the ACK bit set and be allowed by Rtr-2. 
+Use the dir command to verify that a dynamic data connection is allowed.
+
+43)
+
+At this point, you have demonstrated that FTP is not cleanly supported by a packet filtering firewall. 
+Terminate the FTP client on Kali-12 with the bye command.
+
+FTP Through a Stateful Firewall:
+
+
+As you should understand from the previous section, stateful inspection of FTP should allow the dynamically negotiated data connections to be allowed. 
+Such is the case on the ASA. If the access policy permits the initial FTP control connection, then all the properly negotiated data connections will also be allowed. 
+In this section of the discovery, you will configure ASA-1 to allow inbound FTP connections and verify that both active and passive mode transfers will work in all directions.
+
+44)
+
+Access ASDM running on the desktop of the Admin-PC. Navigate to Configuration > Firewall > Access Rules.
+
+45)
+
+Examine the rules that are assigned to the inside interface.
+Note that there is only one rule, and it is an “implicit” rule. That is, there is no explicit ACL applied to the inside interface. 
+What is displayed by ASDM represents the default policy based on security levels.
+Connections are allowed from the inside interface as long as the destination is via a less secure interface. 
+You will not need to update the policy for the inside interface.
+
+46)As you observed in the previous step, TCP connections from the inside to the outside are permitted by default.
+Access the desktop of Kali-11. 
+Verify that you can establish an FTP connection to Kali-21 (10.10.20.21) and that you can obtain a directory listing with both an active and a passive mode data connection.
+
+47)
+Select the outside interface in the Access Rules table and click Add.
+The Add Access Rule window opens with the outside interface already selected.
+
+48)
+
+Change the destination service to tcp/ftp, leaving all other fields at their default value. 
+This will add an access control entry that permits TCP traffic from any IP address to any IP address as long as the destination port is 21 (FTP).
+
+49)
+
+Click OK. The Add Access Rule window closes. The Access Rules table should now show one incoming rule applied to the outside interface.
+
+
+50)
+
+Click Apply. The Preview CLI Commands window displays the commands which will be sent to the ASA. Verify the commands. 
+If they are correct, click Send. If not, click Cancel and retrace your steps.
+
+51)
+
+Access the desktop of Kali-21. Verify that you can establish an FTP connection to Kali-11 (10.10.10.11) and that you can obtain a directory listing with both an active and a passive mode data connection
+
+
+###########
+
+Asymmetric Routing:
+
+Generally, stateful firewalls do not support asymmetric routing. 
+There are exceptions to this, but they require very specific topologies and configurations.
+The norm is that a stateful device needs to process every packet in a connection, from the first to the last; otherwise, it will appear that the rules of TCP are being violated. 
+For example, if the TCP SYN that starts the three-way handshake is allowed through a stateful firewall, it won’t allow the third step of the three-way handshake until it has seen the second step.
+If the second step, the SYN ACK, is routed along a different path, then the stateful device will block the third step of the three-way handshake.
+
+The current configuration in the lab can be used to demonstrate asymmetric routing.
+Kali-11 uses ASA-1 as its default gateway while Kali-22 uses Rtr-2 as its default gateway.
+Outbound connections are permitted by the ASA.
+If a connection attempt is made from Kali-11 to Kali-22, it will start with an outbound TCP SYN through ASA-1. 
+This will be allowed and an entry will be built in ASA-1’s state table. Then, the SYN ACK will be returned through Rtr-2. 
+ASA-1 will not see the SYN ACK.
+When Kali-11 tries to complete the three-way handshake with an ACK, it will be sent through ASA-1. 
+Since ASA-1 did not see the SYN ACK, it appears that the rules of TCP are being broken.
+It will block the packet and the three-way handshake will not complete. 
+You will demonstrate this scenario with a web browser on Kali-11 in this section of the discovery exercise.
+
+
+52)
+Access the desktop of Kali-11. Use the Iceweasel browser and attempt to browse Kali-22 (10.10.20.22). 
+This will fail. Iceweasel will continue to attempt connections. 
+Close Iceweasel to ensure that it stops attempting connections.
+
+53)
+
+Access the Real-Time Log Viewer on the Admin-PC to review the messages that are generated in response to the Kali-11 to Kali-22 connection attempts.
+
+In this last section of this discovery exercise, you will demonstrate in one more way that a packet filter uses ACLs packet by packet while a stateful firewall uses ACLs connection by connection.
+The Telnet application sends each character that is typed on the keyboard in an individual TCP packet. This makes it ideal for demonstrating packet by packet characteristics. 
+In this section of the lab, you will add access control entries to both ASA-1 and Rtr-2 that permit inbound Telnet connections. 
+You will then initiate Telnet connections traversing each of the layer 3 devices and generate some traffic within each connection.
+Finally, you will review the ACL hit counts that have been registered, noting the differences between the stateful and nonstateful devices.
+
+
+54)
+
+From the Admin-PC desktop, access ASDM. If necessary, navigate to Configuration > Firewall > Access Rules.
+
+55)
+
+Select the outside interface in the Access Rules table and click Add. 
+The Add Access Rule window opens and the interface outside is already selected.
+
+
+56)
+
+Change the destination service to tcp/telnet, leaving all other fields at their default value.
+This will add an access control entry that permits TCP traffic from any IP address to any IP address as long as the destination port is 23 (Telnet).
+
+
+
+
+
+
+
+
+
+
+
+
+

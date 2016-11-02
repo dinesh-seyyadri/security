@@ -1,0 +1,33 @@
+1) ASA’s GUI management application Adaptive Security Device Manager using the icon on the desktop.
+   Connect to ASA-1 (10.10.10.1), authenticating as admin with the password Cisco123!.
+
+2) Minimize the ASDM window and use PuTTY to establish an SSH connection to ASA-1. Launch PuTTY using the icon on the desktop. 
+Either type 10.10.10.1 in the IP address field and click Open, or double-click the ASA-1 entry under Saved Sessions. 
+Again, authenticate as admin with the password Cisco123!. 
+Also, use the enable command to access privilege level 15. There is no enable secret configured. Simply hit Enter at the password prompt.
+
+3) In the next few steps, you will observe the behavior of ASA-1 and Rtr-2 with traffic between the four Kali PC’s.
+For now, simply access each of their desktops, one at a time. On each, open a terminal window using the desktop icon.
+Also, verify that the default gateway setting is as expected using the command netstat –rn
+
+root@Kali-11:~# netstat -rn
+Kernel IP routing table
+Destination    Gateway         Genmask         Flags   MSS Window  irtt Iface
+0.0.0.0        10.10.10.1      0.0.0.0         UG        0 0          0 eth0
+10.10.10.0     0.0.0.0         255.255.255.0   U         0 0          0 eth0
+
+4) Access the desktop of Kali-22. 
+Using the terminal window, ping Kali-12 (10.10.10.12). The ping should succeed. Use Ctrl-C to terminate the ping
+
+5) Establish an FTP session from Kali-22 to Kali-12. Log in as anonymous. A password is not required. 
+Use the dir command to retrieve the directory information through an FTP data connection.
+Finally, use the bye command to terminate the FTP session
+
+8)
+Access ASDM from the desktop of the Admin-PC. 
+Navigate to Configuration > Device Setup > Interfaces. Examine the interface configuration table.
+
+9)
+
+Access the desktop of Kali-11. 
+Open the Iceweasel web browser and attempt to browse Kali-21 (10.10.20.21). Kali-21’s web page should display successfully

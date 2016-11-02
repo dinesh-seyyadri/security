@@ -145,9 +145,50 @@ To access the security appliance with ASDM, use a web browser and navigate to ht
 You will then be given an option to proceed or download the ASDM Launcher to your desktop. Enter the configured username and password to gain access.
 To access the security appliance using SSH, use a SSH client. Enter the configured username and password to gain access.
 
+7) Configuring Cisco ASA Interfacese Cisco ASA:
+
+In order to make a Cisco Adaptive Security Appliance (ASA) operational, you must configure at minimum, basic interface configuration parameters. 
+These include IP address, interface name, and security levels. 
+Also, the interface must be enabled from its initial shut down state.
+
+In the Cisco ASA, default access control is based on interface security levels.
+Each interface must have a security level from 0 (lowest) to 100 (highest).
+For example, you should assign your most secure network, such as the inside host network, to level 100, while the outside network connected to the Internet can be level 0. 
+Other networks, such as DMZs can be in between. You can assign interfaces to the same security level.
 
 
 
+
+CLI configuration would be:
+
+      Interface GigabitEthernet0/2
+        no shutdown
+        nameif dmz
+        security-level 50
+        ip address  172.16.1.1 255.255.255.0
+
+Security levels define the level of trustworthiness of an interface.
+The higher the level, the more trusted the interface.
+The specific values are not really important, but the relationship between the values is. 
+Traffic flows are defined as inbound or outbound like this:
+
+
+1) Inbound traffic travels from a less trusted interface to a more trusted interface. 
+ That is, from a lower security level to a higher security level.
+ 
+2) Outbound traffic travels from a more trusted interface to a less trusted interface. 
+That is, from a higher security level to a lower security level.
+
+The security level controls network access. By default, there is an implicit permit for connections from a higher security interface to a lower security interface (outbound). 
+Hosts on the higher security interface can initiate connections to any host on a lower security interface. 
+Also by default, there is an implicit deny for connections from a lower security interface to a higher security interface (inbound).
+Hosts on a lower security interface are not allowed to initiate connections to a host on a higher security interface. 
+This default behavior can be overridden by applying an access list to an interface.
+By default, traffic is not allowed between two interfaces with the same security level, even if you configure permit statements in an ACL. 
+If you enable communication for same security interfaces, there is an implicit permit for interfaces to access other interfaces on the same security level or lower, which also can be overridden with the application of ACLs.
+
+
+To perform basic interface configurations by using the Cisco Adaptive Security Device Manager (ASDM), navigate to Configuration>Device Setup>Interfaces. Choose the interface that you want to configure and click Edit Interface.
 
 
 

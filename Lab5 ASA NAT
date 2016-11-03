@@ -1,0 +1,543 @@
+1)
+Access the desktop of the Admin-PC and open ASDM using the icon on the desktop.
+2)
+Connect to lab-asa (10.1.1.1) using admin as the username and Cisco123! as the password. ASDM opens, displaying the Home page for lab-asa.
+
+3)
+To examine the current interface configuration, navigate to Configuration > Device Setup > Interfaces. The interface table is displayed.
+
+Notice that there are 10 interfaces available, in total. Only Gi0/1 is enabled and configured.
+Its name is inside and its security level is 100, which is the highest possible value for security level. 
+It is also assigned 10.1.1.1/24 as its IP address.
+
+4)
+
+To view the management access settings, navigate to Configuration > Device Management > Management Access > ASDM/HTTPS/Telnet/SSH.
+
+Notice that access is defined for ASDM/HTTPS and SSH. In both cases, the IP address 10.1.1.10/32 is allowed access via the interface named inside.
+
+5)
+To view the user accounts configured in the ASA’s local database, navigate to Configuration > Device Management > Users/AAA > User Accounts.
+
+Notice that there are two users that are defined. One, enable_15, is a default system defined account which is used when privileged mode of the CLI is accessed via the enable command. 
+The other, admin, is the account that Kayla defined and you have used to access the ASA via ASDM.
+
+6)
+
+In ASDM, return to Configuration > Device Setup > Interfaces.
+
+7)
+
+Either select GigabitEthernet0/2 and click Edit, or double-click GigabitEthernet0/2. The Edit Interface window opens.
+
+8)
+
+Configure the following settings:
+Interface Name: dmz
+Security Level: 50
+Enable Interface: (Check box.)
+Use Static IP: (Select radio button.)
+IP Address: 172.16.1.1
+Subnet Mask: 255.255.255.0
+
+9)
+
+Click OK. ASDM will present a warning stating that changing the security level on an interface modifies the behavior of the ASA. This is understood. Click OK to dismiss the warning.
+
+10)
+
+Either select GigabitEthernet0/3 and click Edit, or double-click GigabitEthernet0/3. The Edit Interface window opens.
+
+11)
+
+Configure the following settings:
+Interface Name: outside
+Security Level: 0
+Enable Interface: (Check box.)
+Use Static IP: (Select radio button.)
+IP Address: 192.168.1.1
+Subnet Mask: 255.255.255.0
+
+12)
+
+Click OK. ASDM will present a warning stating that changing the security level on an interface modifies the behavior of the ASA. 
+This is understood. Click OK to dismiss the warning.
+
+13)
+
+Examine the interface table to double check your work. If anything needs changing, edit the appropriate settings.
+
+14)
+
+The configuration changes are currently only in ASDM. 
+To push the configuration changes to lab-asa, click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. 
+Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+
+15)
+
+Verify connectivity from each of the three interfaces. In ASDM, select Ping from the Tools pull down menu. The Ping window opens.
+
+16)
+Enter the Inside-Srv’s IP address (10.1.1.50) in the IP Address or Hostname field and click Ping. The ping should succeed.
+
+17)
+
+Repeat the test two more times. Ping DMZ-Srv (172.16.1.50) and then ping Outside-Srv (192.168.1.50). 
+These pings should succeed as well. Close the Ping window when you are done.
+
+
+Verify Connectivity Based on Security Level
+
+There is a default policy that is implied by the security level configured on interfaces.
+The ASA allows sessions that originate on higher security interfaces. 
+That is, if the initiator of the session is on an interface with a higher security level than the destination interface, then the session is allowed.
+A state table entry is created and bidirectional traffic that is associated with the session is allowed. However, if the reverse is true, the initiating packet is dropped and the session does not establish. 
+Given the configuration on lab-asa’s three interfaces, sessions should be allowed from the inside (100) to the dmz (50), from the inside (100) to the outside (0) and from the dmz (50) to the outside (0). 
+No sessions are allowed to originate from the outside, and sessions are not allowed from the dmz to the inside. You will verify this behavior in this section of the discovery.
+
+18)
+
+Before you start the access attempts, navigate to Monitoring > Logging > Real-Time Log Viewer in ASDM. 
+Click the View button. The Real-Time Log Viewer window opens.
+
+
+19)
+
+Access the desktop of Inside-Srv and open the Iceweasel browser using the icon on the desktop.
+
+20)
+
+First attempt to browse DMZ-Srv (172.16.1.50). Then attempt to browse Outside-Srv (192.168.1.50). Both attempts should succeed.
+
+21)
+
+Access the desktop of DMZ-Srv and open the Iceweasel browser using the icon on the desktop.
+
+22)
+
+First attempt to browse Outside-Srv (192.168.1.50). Then attempt to browse Inside-Srv (10.1.1.50). 
+The attempt to Outside-Srv should succeed, but the attempt to Inside-Srv should not.
+
+23)
+
+Access the desktop of Outside-Srv and open the Iceweasel browser using the icon on the desktop.
+
+24)
+
+First attempt to browse DMZ-Srv (172.16.1.50). 
+Then attempt to browse Inside-Srv (10.1.1.50). You should not be able to browse either server.
+
+25)
+Return to the desktop of the Admin-PC and examine the Real-Time Log Viewer table.
+Depending on how long you let Iceweasel continue to attempt connections to the systems that are being blocked, logging the records will vary.
+
+26)
+Close the Real-Time Log Viewer window.
+
+
+
+Configure Static NAT for the DMZ Server:
+
+
+In the lab environment, there are only three subnets. All use private (RFC 1918) address space. 
+All the systems are configured to use the ASA as their default gateways. 
+As you have seen, interconnectivity works in the current configuration, contingent on the security levels that are configured on the ASA interfaces. 
+But in a real environment, private addressing is not routable across the public Internet. As such, Network Address Translation (NAT) must be configured for servers that have private IP addresses that need to be exposed to the public.
+
+
+In this section of the discovery, you will configure NAT for the DMZ server.
+The translated address can either be an unused address on the destination subnet, or it can be an address on a subnet that does not physically exist, but routing is configured so that traffic for that network is forwarded to the ASA. 
+In the next section of this discovery, you will configure translation using a subnet that does not physically exist. 
+In this section, you will configure translation for DMZ-Srv to 192.168.1.100 on the Outside interface.
+
+27)
+
+Return to the ASDM application on the Admin-PC. Navigate to Configuration > Firewall > Objects > Network Objects/Groups. 
+The Network Objects/Groups table is displayed. 
+It is automatically populated with the networks associated with each of the ASA’s active interfaces.
+
+28)
+
+Select Add > Network Object. The Add Network Object window appears.
+
+29)
+
+Expand the NAT option, and define the following fields, leaving other fields at their default values:
+Name: DMZ-Srv
+IP Address: 172.16.1.50
+Add Automatic Address Translation Rules: (Check box.)
+Type: Static
+Translated Addr: 192.168.1.100
+
+30)
+
+Click the Advanced button.
+The Advanced NAT Settings window opens. 
+Set the Source Interface to dmz and the Destination Interface to outside, and click OK.
+
+31)
+
+Click OK in the Add Network Object window.
+
+32)
+
+Click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+object network DMZ-Srv
+        host 172.16.1.50
+        nat (dmz,outside) static 192.168.1.100
+        
+33)To verify the translation, access the desktop of the DMZ-Srv. Using Iceweasel, browse the Outside-Srv (192.168.1.50).
+
+34)Select Address from the Outside-Srv’s web page. The Address page will display the client IP address that connected to the Outside-Srv. 
+   It should be the DMZ-Srv’s translated address (192.168.1.100).
+   
+35)Return to ASDM on the desktop of the Admin-PC. Navigate to Configuration > Firewall > Objects > Network Objects/Groups
+
+36)
+Either double-click the inside-network object group or select the inside-network object group in the table and click Edit. 
+The Edit Network Object window opens.
+
+37)
+
+Define the following fields in the Edit Network Object dialog, leaving other fields at their default values:
+Name: inside-network
+NAT: (Expand section.)
+Add Automatic Address Translation Rules: (Check box.)
+Type: Dynamic
+
+38)
+
+The Translated Address itself is defined as a network object. Click the ellipsis (…) button in the Translated Addr field.
+The Browse Translated Addr window opens.
+
+39)
+
+Click Add > Network Object. The Add Network Object window opens.
+
+40)
+Set the following fields in the Add Network Object dialog, leaving other fields at their default values:
+Name: TranslationPool
+Type: Range
+Start Address: 192.168.2.100
+End Address: 192.168.2.199
+
+41)
+
+Click OK in the Add Network Object window. You are Returned to the Browse Translated Addr window with TranslationPool now in the Network Objects list. 
+Double-click TranslationPool, which adds it to the Selected Translated Addr field at the bottom of the window.
+
+42)
+
+Click OK in the Browse Translated Addr window and you are returned to the Edit Network Object window.
+
+43)
+
+Click the Advanced button. The Advanced NAT Settings window opens. Set the Source Interface to inside and the Destination Interface to outside.
+
+44)
+
+Click OK in the Advanced NAT Settings window, returning to the Edit Network Object window. Click OK in the Edit Network Object window, returning to the main ASDM window.
+
+45)
+
+Verify the definition of the inside-network in the table. It should have 10.1.1.0 and 255.255.255.0 as the IP address and Netmask. 
+It should also have Object NAT Address 192.168.2.100-192.168.2.199.
+
+46)
+
+Click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA.
+Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+
+ object network TranslationPool
+      range 192.168.2.100 192.168.2.199
+ object network inside-network
+      subnet 10.1.1.0 255.255.255.0
+      nat (inside,outside) dynamic TranslationPool
+      
+      
+47)
+
+Verify the new dynamic NAT translation. 
+Open the Firefox web browser on the Admin-PC and attempt to browse the Outside-Srv (192.168.1.50).
+Using the menu on the Outside-Srv web page, select the Address page.
+Verify that the client IP address seen by the Outside-Srv is within the range of 192.168.2.100-192.168.2.199.
+Do not close the Firefox web browser.
+
+48)
+Continue verifying the new dynamic NAT translation.
+Access the desktop of the Inside-Srv.
+Use the Iceweasel web browser on the Inside-Srv to browse the Outside-Srv (192.168.1.50). 
+Using the menu on the Outside-Srv web page, select the Address page.
+Verify that the client IP address seen by the Outside-Srv is a different IP address within the range of 192.168.2.100-192.168.2.199.
+
+49)
+View the active translations on the ASA. 
+This will include the static translation for the DMZ server and the active dynamic translations for the two hosts on the inside. 
+Return to ASDM on the Admin-PC. Select Tools > Command Line Interface. 
+Either type show xlate or select it from the drop-down list in the Single-line command field. Click Send. 
+Verify the three translations in the output. Close the Command Line Interface window when you are done.
+
+50)
+Since NAT is already configured for the inside-network object group, you must modify that object group’s configuration to change it to use PAT and the ASA’s interface address.
+From ASDM running on the Admin-PC, navigate to Configuration > Firewall > Objects > Network Objects/Groups.
+
+
+51)
+
+Double-click the inside-network object group to open the Edit Network Object window.
+
+52)
+
+Change the NAT type to Dynamic PAT (Hide). Also, change the Translated Addr field to outside.
+
+
+Note the following:
+a) As you start to type outside in the field, ASDM suggests the completion for you and there is an interface icon next to the word indicating that this is indeed a reference to the outside interface.
+
+b) You could have also used the ellipses button in the Translated Addr field to open the Browse Translated Addr window and select the outside interface from the options presented.
+
+53)
+
+Click OK in the Edit Network Object window; then click Apply. 
+ASDM displays a message asking if it should clear the translation table. 
+The disadvantage of clearing the translation table is that any active connections using the old translation rules will be terminated.
+This can be disruptive to users. 
+The advantage of clearing the translation table is that it guarantees that no legacy connection remains under the old rules. 
+In this case, click Yes to clear the translation table.
+
+54)
+
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA.
+Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+object network inside-network
+     nat (inside,outside) dynamic interface
+clear xlate interface inside local 10.1.1.0 netmask 255.255.255.0
+
+
+55)
+
+Verify the new PAT translation using the ASA’s outside interface IP address (192.168.1.1). 
+Firefox should be running on the Admin-PC, displaying the Outside-Srv’s Address page and the old translation. 
+Click the Address option on the web page’s menu to reload this page. 
+The client IP address that is seen by the Outside-Srv should change to 192.168.1.1.
+
+Web connections are short lived. 
+To demonstrate two simultaneous PAT translations, open two FTP control connections simultaneously.
+First, open a command prompt window on the Admin-PC, and FTP to the Outside-Srv (192.168.1.50). 
+Authenticate as anonymous (any password will be accepted). 
+Leave that FTP session running and repeat the process from a Terminal window on the Inside-Srv.
+
+56)
+Web connections are short lived.
+To demonstrate two simultaneous PAT translations, open two FTP control connections simultaneously. 
+First, open a command prompt window on the Admin-PC, and FTP to the Outside-Srv (192.168.1.50). 
+Authenticate as anonymous (any password will be accepted). 
+Leave that FTP session running and repeat the process from a Terminal window on the Inside-Srv.
+
+57)
+
+View the translation table on the ASA. Return to the desktop of the Admin-PC. 
+In ASDM, select Tools > Command Line Interface. Send the show xlate command to the ASA.
+Verify that there are two TCP PAT translations in the translation table.
+
+Result of the command: "show xlate"
+
+3 in use, 4 most used
+Flags: D - DNS, e - extended, I - identity, i - dynamic, r - portmap,
+       s - static, T - twice, N - net-to-net
+NAT from dmz:172.16.1.50 to outside:192.168.1.100
+    flags s idle 16:00:31 timeout 0:00:00
+
+TCP PAT from inside:10.1.1.50/59782 to outside:192.168.1.1/59782 flags ri idle 0:00:54 timeout 0:00:30
+TCP PAT from inside:10.1.1.10/1116 to outside:192.168.1.1/1116 flags ri idle 0:01:17 timeout 0:00:30
+
+note:
+
+Note the following:
+There is one translation for the Admin-PC (10.1.1.10) and one for the Inside-Srv (10.1.1.50), but both translate to the same address on the outside (192.168.1.1).
+The translations are distinguished based on their source ports. The ASA will maintain the original source port if that port is not already used in a PAT translation. 
+If, by chance, two hosts simultaneously use the same source port, the ASA will assign a random port for the second translation.
+
+
+
+
+
+
+58)
+
+Close the Command Line Interface window. Also terminate both FTP connections using the bye command within the FTP client.
+
+Configure Policy NAT for Admin-PC to Outside-Srv Connections:
+
+The translations that you have configured so far have been associated with object groups.
+Translations configured this way are referred to as either object NAT or auto NAT configurations. 
+In this section of the lab, you will configure NAT in a different way. 
+This method is referred to as Policy NAT as it can define precise NAT policies for very specific situations.
+It is also referred to as manual NAT. 
+Sometimes it is referred to as twice NAT, as it allows for one rule to support translations in both directions.
+
+
+In this section of the discovery, you will configure two different scenarios.
+You will first configure a policy that translates the IP address of the Inside-Srv to 192.168.1.210 when it communicates with the Outside-Srv.
+This policy does not affect translations from the Inside-Srv to any other systems.
+For other connections to the outside, the Inside-Srv will still use the dynamic PAT configuration. 
+Once this is configured and verified, you will take it one step further.
+You will configure twice NAT, so that not only does the Inside-Srv appear as 192.168.1.210 to the Outside-Srv, but also that the Outside-Srv appears as 10.10.10.210 to the Inside-Srv.
+
+
+
+59)
+
+Start by configuring host objects associated with the real and translated addresses. 
+From ASDM running on the Admin-PC, navigate to Configuration > Firewall > Objects > Network Objects/Groups.
+
+60)
+
+Click Add > Network Object. Define a translation for the Inside-Srv by defining the following fields, leaving the other fields at their default values:
+Name: Inside-Srv
+Type: Host
+IP Address: 10.1.1.50
+
+61)
+
+Click Add > Network Object. Define a translation for the Inside-Srv by defining the following fields, leaving the other fields at their default values:
+Name: Inside-Srv
+Type: Host
+IP Address: 10.1.1.50
+
+62)
+
+Repeat the process one more time to define:
+Name: Inside-Srv-Translation-For-Outside-Srv
+Type: Host
+IP Address: 192.168.1.210
+
+63)
+
+Verify the three entries in the Network Objects/Groups table.
+The following entries should be present: Inside-Srv – 10.1.1.50, Outside-Srv – 192.168.1.50 and Inside-Srv-Translation-For-Outside-Srv – 192.168.1.210.
+
+64)
+
+Click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+
+object network Inside-Srv
+      host 10.1.1.50
+object network Inside-Srv-Translation-For-Outside-Srv
+      host 192.168.1.210
+ object network Outside-Srv
+      host 192.168.1.50If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+      
+      
+65)
+
+Now, define the manual translation of the Inside-Srv for connections to the Outside-Srv. 
+Navigate to Configuration > Firewall > NAT Rules. The NAT Rules table appears.
+
+66)
+
+When you configure manual NAT entries, they can either be placed before or after the Network Object NAT rules. 
+Where they are placed determines their precedence. 
+We want this translation to have a higher precedence than the generic PAT translation that is defined. 
+Click Add > Add NAT Rule Before “Network Object” NAT Rules. The Add NAT Rule window opens.
+
+67)
+
+Either type or use the ellipsis option to populate the following fields, leaving the other fields at their default values:
+
+Match Criteria: Original Packet:
+Source Address: Inside-Srv
+Destination Address: Outside-Srv
+Action: Translated Packet
+Source Address: Inside-Srv-Translation-For-Outside-Srv
+Destination Address: -- Original –
+
+68)
+
+Click OK in the Add NAT Rule window. Verify that the new rule appears as expected before the Network Object NAT rules.
+
+69)
+
+Click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands.
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+nat 1 source static Inside-Srv Inside-Srv-Translation-For-Outside-Srv destination static Outside-Srv Outside-Srv
+
+70)
+
+Verify the translation. Access the desktop of the Inside-Srv. Use the Iceweasel browser.
+First browse the address page on the Outside-PC (192.168.1.10). It should still show that the address connecting to the server is from the PAT translation (192.168.1.1). 
+Then browse the address page on the Outside-Srv (192.168.1.50). It should show that the address connecting to the server is from the manual NAT translation (192.168.1.210).
+Note: The new NAT rule takes precedence over the object NAT rules. But it only applies to traffic from the Inside-Srv to the Outside-Srv.
+
+71)
+
+Now edit the new NAT rule to change it to a twice NAT configuration.
+Not only will the Inside-Srv appear as 192.168.1.210 to the Outside-Srv, but the Outside-Srv will appear as 10.10.10.210 to the Inside-Srv.
+Start by configuring a network object for the Outside-Srv’s translated address.
+From ASDM running on the Admin-PC, navigate to Configuration > Firewall > Objects > Network Objects/Groups.
+
+
+72)
+
+Click Add > Network Object. Define a translation for the Inside-Srv by defining the following fields, leaving the other fields at their default values:
+Name: Outside-Srv-Xlate-For-Inside-Srv
+Type: Host
+IP Address: 10.10.10.210
+
+73)
+
+Click OK and verify that the new entry appears as expected in the Network Objects table. Click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+
+object network Outside-Srv-Xlate-For-Inside-Srv
+   host 10.10.10.210
+   
+74)
+
+Return to Configuration > Firewall > NAT Rules. Select the manual NAT rule that you just created and click Edit. Change the two destination addresses fields as follows:
+Original Packet: Outside-Srv-Xlate-For-Inside-Srv
+Translated Packet: Outside-Srv
+
+75)
+
+Click OK and verify that the edited entry appears as expected in the NAT Rules table. Click Apply.
+Click Yes to clear the current translation table. Examine the commands in the Command Preview window. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+no nat 1
+clear xlate local 192.168.1.50
+clear xlate local 10.1.1.50
+nat 1 source static Inside-Srv Inside-Srv-Translation-For-Outside-Srv destination static Outside-Srv-Xlate-For-Inside-Srv Outside-Srv
+
+
+76)
+Verify the new policy. Access the desktop of the Inside-Srv. 
+From the Iceweasel browser, browse the translated address for the Outside-Srv (10.10.10.210). 
+This should display the home page of the Outside-Srv. Then select Address from the web page menu. 
+The client IP address that is seen by the Outside-Srv should be 192.168.1.210.
+Also, even though 10.10.10.210 was the IP address that was used in the browser’s URL entry field, the local IP address of the server is still 192.168.1.50.
+
+77)
+
+This twice-NAT translation is uniquely implemented between the Inside-Srv and the Outside-Srv.
+Verify this. First, browse a different destination from the Inside-Srv. 
+Browse the Address page on the Outside-PC (192.168.1.10) from Iceweasel on the Inside-Srv.
+The reported client IP address should be the PAT translation of 192.168.1.1. 
+Next, browse the Outside-Srv twice-NAT address from a different system on the inside. 
+Access the desktop of the Admin-PC. Attempt to browse the twice-NAT translation of the Outside-Srv (10.10.10.210). 
+This will not even connect as the translation is unique to the Inside-Srv to the Outside-Srv.
+
+
+
+
+

@@ -1,0 +1,151 @@
+NAT Fundamentals on ASA:
+
+NAT, defined in RFC 1631, operates in layer 3 forwarding devices to provide address simplification and conservation. 
+The most common use of NAT is to connect networks using private RFC 1918 network addresses to connect to the public Internet.
+NAT translates the private addresses that are used in the internal network into public addresses that can be routed across the Internet. 
+As part of this functionality, you can configure NAT to use only one address for the entire network to the outside world. 
+Using only one address effectively hides the internal network, thus providing additional security.
+
+Multiple device types can be configured to perform NAT services.
+Although firewalls are most common, routers and Layer 3 switches are also capable of deploying this service.
+
+Cisco defines the following list of NAT terms, which are illustrated in the figure below.
+
+1) Inside local address: The IPv4 address that is assigned to a host on the inside network.
+   The inside local address is likely to be one that falls within the RFC 1918 reserved private IPv4 address spaces.
+   
+2) Inside global address: A globally routable IPv4 address that represents one or more inside local IPv4 addresses to the outside world.
+
+3) Outside local address: The IPv4 address of an outside host as it appears to the inside network. 
+   Not necessarily a public address, the outside local address is allocated from a routable address space.
+ 
+4) Outside global address: The IPv4 address that is assigned to a host on the outside network by the host owner. 
+   The outside global address is allocated from a globally routable address or network space.
+   
+NAT offers the following benefits:
+
+a) Eliminates the need to readdress all hosts that require external access, saving time and money.
+
+b) Conserves addresses through application port-level multiplexing. 
+   With NAT, internal hosts can share a single registered IPv4 address for all external communications. 
+   In this type of configuration, relatively few external addresses are required to support many internal hosts, thus conserving IPv4 addresses.
+   
+As per Diagram NAT1
+
+a) Host l0.10.10.11 sends a packet to host B.
+b) The router receives the packet and checks its NAT table. It finds an entry to translate 10.10.10.11 to 203.0.113.2. If there was no entry in the table, the router would check the NAT rules to see if there is a rule specifying a dynamic translation. If there was such a rule, a new entry would be created.
+c) The router replaces the inside local address 10.10.10.11 with the inside global address 203.0.113.2 and forwards the packet.
+d) Host B receives the packet with 203.0.113.2 as the source address. When Host B replies, it specifies 203.0.113.2 as the destination address.
+e) When the router receives the reply packet and checks its NAT table. It finds the entry that is associated with the inside global IPv4 address 203.0.113.2.
+f) The router replaces the inside global address 203.0.113.2 with the inside local address 10.10.10.11 and forwards the packet.
+
+
+NAT requirements will vary from situation to situation. Following deployment modes are available to address varying requirements:
+
+ a) Static NAT: This deployment choice maps an (one) unregistered IPv4 address to a registered IPv4 address.
+    One-to-one static NAT is particularly useful when a device must be accessible from outside the network. 
+    For example, static NAT is used when a server on a DMZ needs to be continuously reachable by the same predictable, translated address.
+    
+ b) Dynamic NAT: This deployment choice maps an unregistered IPv4 address to a registered IPv4 address from a pool of registered IPv4 addresses. 
+    This is useful for outbound client connections when you have fewer outside global IP addresses than inside local hosts.
+    
+ c)  Dynamic PAT: This deployment choice maps multiple unregistered IPv4 addresses to a single registered IP address by using the source port to distinguish between translations. 
+     That single IP address may be the IP address of the NAT device itself. 
+     Different systems may refer to dynamic PAT using different terms. 
+     Examples include NAT overload, Hide NAT and Many to One NAT. 
+     
+ d)  Static PAT: Imagine a network which has just one single public IP address. 
+     This IP address must be used by the firewall that connects the network to the Internet.
+     It must also be used as the PAT address for all outbound connections.
+     If this network must also support a DMZ server, then Static PAT can be used. 
+     For example, TCP port 80 may be reserved for PAT translation to the HTTP service on the DMZ server. 
+     Static PAT is sometimes called port forwarding.
+     
+ e)  Policy NAT: This deployment choice uses extended criteria, such as source addresses, destination addresses, and transport layer ports to specify the translation.
+     For example, traffic that is destined to a particular partner network may be translated to a specific address using PAT while traffic destined elsewhere is translated using a dynamic NAT pool.
+
+
+At this point, PAT is worthy of further consideration. One common variant of NAT is dynamic PAT. 
+PAT is sometimes referred to as “NAT overload” or as “Hide NAT.” 
+PAT allows you to translate multiple internal addresses into a few external addresses, or even a single external address, essentially allowing the internal addresses to share one external address.
+
+PAT uses unique source port numbers on the inside global IPv4 address to distinguish between translations.
+Because the port number is encoded in 16 bits, the total number of internal addresses that NAT can translate into one external address is, theoretically, as many as 65,536. 
+Some firewalls will also use destination IP address and port number to distinguish between translations. 
+In this case, the same source port number can be used multiple times, increasing scalability even further. 
+In either case, PAT allows for highly efficient use of address space for outbound sessions.
+
+
+Configure NAT on Cisco ASA:
+
+Cisco Adaptive Security Appliance (ASA) software uses an object-oriented configuration to overcome the earlier configuration constraints. 
+By creating an object for every host, translated address, and service that is used in translations, it is easier to understand how the NAT configuration is used.
+With Cisco ASA Software, you can configure translations as network objects that are added to the configuration (auto NAT).
+
+The concept of a “network object” is defined as a single IP address or network.
+
+The host or subnet that is defined in the network object is used to identify the real (nontranslated) address in a NAT configuration.
+
+ACLs that permit traffic from a lower-security-level interface to a higher-security-level interface reference the real (nontranslated) address instead of the mapped (translated) address of the inside hosts.
+
+The Cisco ASA uses a concept of a NAT table to build NAT configuration entries.
+The NAT sections are read by the ASA from top to bottom. 
+The first translation match that is found is used.
+
+The NAT table has 3 sections:
+
+ a) Manual NAT (first section): The manual NAT section enables the administrator to define translations that the appliance compares before the other two sections.  
+    These translations are usually very precise. They can include translation on both the source and destination IP addresses, requiring the connect ion to be to a specific destination for the rule to match.(Policy NAT)
+
+  b) Auto NAT (second section): The auto NAT section, also referred to as object NAT, contains translations that are defined in the object itself. 
+     This section allows each object definition to include a single translation for every object that is configured.
+     These translations are usually static translations for servers that have clients connecting to them from the Internet or are dynamic translations for clients connecting to the Internet.
+  
+  c) Auto NAT (second section): The auto NAT section, also referred to as object NAT, contains translations that are defined in the object itself. 
+     This section allows each object definition to include a single translation for every object that is configured.
+     These translations are usually static translations for servers that have clients connecting to them from the Internet or are dynamic translations for clients connecting to the Internet.
+     
+If no translation is found in the NAT table, the packet is forwarded without a translation, according to any applied access rules.
+
+Verify NAT Operations :
+
+To view NAT translation table from the CLI, use the show xlate command.
+
+
+######
+
+3 in use, 3 most used
+Flags: D - DNS, e - extended, I - identity, i - dynamic, r - portmap,
+       s - static, T - twice, N - net-to-net
+NAT from dmz:172.16.1.50 to outside:192.168.1.100
+    flags s idle 15:34:04 timeout 0:00:00
+
+NAT from inside:10.1.1.50 to outside:192.168.2.144 flags i idle 0:02:51 timeout 3:00:00
+NAT from inside:10.1.1.10 to outside:192.168.2.177 flags i idle 0:05:22 timeout 3:00:00
+TCP PAT from inside:10.1.1.50/59782 to outside:192.168.1.1/59782 flags ri idle 0:00:54 timeout 0:00:30
+TCP PAT from inside:10.1.1.10/1116 to outside:192.168.1.1/1116 flags ri idle 0:01:17 timeout 0:00:30
+
+##########NAT 
+
+Note the direction and flags used to identify the translations in use.
+To view the NAT configurations(NAT Table), use the show nat CLI command.
+#######NAT Table####
+The command output example shows the 3 sections of the NAT table that were previously mentioned, and the NAT policies within each section.
+Manual NAT Policies (Section 1)
+1 (dmz) to (Partner_Network) source dynamic DMZ_Network 172.18.1.11_PAT destination static 172.16.1.0_network 172.17.1.0_network
+    translate_hits = 4, untranslate_hits = 19
+
+Auto NAT Policies (Section 2)
+1 (dmz) to (outside) source static DMZ-Server 192.168.1.11
+    translate_hits = 12956, untranslate_hits = 2523
+2 (inside) to (outside) source dynamic 10.0.1.0_network interface
+    translate_hits = 1204, untranslate_hits = 3061
+
+Manual NAT Policies (Section 3)
+1 (any) to (outside) source dynamic 10.0.0.0_Private 192.168.1.8_outside
+    translate_hits = 4728, untranslate_hits = 92837
+
+########
+The command output example shows the 3 sections of the NAT table that were previously mentioned, and the NAT policies within each section.
+
+

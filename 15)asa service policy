@@ -1,0 +1,43 @@
+1) Overview of Interface Access Rules
+2) Configure Interface Access Rules
+3) Configure Object Groups
+4) Introducing Cisco ASA Modular Policy Framework
+5) Configuring Cisco MPF Service Policy Rules
+Access Control Using the Cisco ASA
+
+
+1) Overview of Interface Access Rules:
+
+The Cisco Adaptive Security Appliance (ASA) provides the administrator with a rich set of access control methods that can tightly control access between networks. 
+This topic discusses the most fundamental of these controls: interface access rules that enforce a basic Layer 3 and Layer 4 policy.
+
+Interface access rules are a per-interface ordered list of permit and deny rules, evaluated sequentially from the top down.
+
+
+When deploying Cisco ASA appliances, your access policy is made up of one or more access rules per interface, and optionally a set of global access rules which affects all interfaces.
+An access rule permits or denies sessions. 
+The determination of whether to permit or deny a session can be based on the protocol, a source and destination IP address or network, and optionally the source and destination ports.
+
+The order of rules is important.
+When the Cisco ASA appliance decides whether to permit or deny a session, the appliance tests the initial packet against each rule in the order in which the rules are listed.
+After a match is found, no more rules are checked. 
+For example, if you create an access rule at the beginning that explicitly permits all traffic for an interface, no further rules are ever checked.
+
+
+There is an implicit deny-all rule at the end of the global access rule list.
+The global access rule list is appended to the end of interface access rule lists. 
+Therefore, if a session does not match any of the rules in the interface access control list, nor any explicit rules that are defined in the global access control list, the session will be denied by the implicit policy.
+
+Note:******
+
+
+Note that interface access rules apply to through traffic, that is, traffic entering the appliance on one interface and then leaving the appliance on the same or another interface. 
+Traffic that is directed to the IP addresses or interfaces of the appliance is not subject to these rules, and requires an additional set of rules to implement access control.
+
+The Cisco ASA uses network masks instead of the Cisco IOS wildcard masks to delineate networks in its interface access rules.
+
+For all statefully managed protocols and applications, the Cisco ASA interface access rules only need to permit the initial packet per session. 
+The state table is used to provide access control for subsequent packets that are associated with the session. 
+As long as the rules of the protocol are followed, subsequent packets will be permitted, bidirectionally. 
+Using the state table, the Cisco ASA will drop packets which violate protocol rules.
+

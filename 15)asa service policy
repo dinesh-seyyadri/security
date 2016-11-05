@@ -41,3 +41,253 @@ The state table is used to provide access control for subsequent packets that ar
 As long as the rules of the protocol are followed, subsequent packets will be permitted, bidirectionally. 
 Using the state table, the Cisco ASA will drop packets which violate protocol rules.
 
+2) Configure Interface Access Rules:
+
+Applying interface ACLs on security appliance interfaces is optional.
+
+If you do not apply interface access rules to a specific interface, the appliance applies a default access policy:
+ 1) All outbound (i.e., to lower-security-level interfaces) connections for hosts on that interface are permitted.
+ 2) All inbound (i.e., to higher-security-level interfaces) connections for hosts on that interface are denied.
+ 
+
+You need to specifically allow connectivity:
+
+ 1)Between interfaces with the same security levels.
+
+ 2) All such connectivity is then still controlled by the access rules of the relevant interface.
+ 
+ 3) ACLs that permit traffic from a lower-security-level interface to a higher-security-level interface reference the “real” (nontranslated) IP address instead of the “mapped” (translated) IP address of the inside hosts.
+ 
+You can apply interface access rules on the input or output direction of a Cisco Adaptive Security Appliance (ASA) interface. 
+You can optionally apply a global access rule. You can use a global access rule to control access to all interfaces on the security appliance only in the inbound direction. 
+A global rule governs all traffic passing though the security appliance that does not match any interface rules.
+
+Interface access rules that you apply inbound on the interface control the connections that the security appliance accepts from hosts on that interface.
+Interface access rules that are applied outbound on the interface control the connections that are forwarded to hosts on that interface.
+The global access rule, if configured, applies to all traffic that does not match any interface access rules.
+
+When a network application requires access through the Cisco ASA security appliance, you must permit it in all access rules that are applied in the direction of the session across the appliance.
+To simplify configuration, a common strategy is to only apply inbound interface access rules.
+
+The Access Rules table within the Cisco Adaptive Security Device Manager (ASDM) provides a consolidated view of all interface access rules that are configured and applied on the security appliance interfaces.
+To access the Access Rules table, choose Configuration > Firewall > Access Rules.
+
+The figure shows the default view of the Access Rules table on a Cisco ASA security appliance that does not have any explicit access rules configured on the outside or dmz interfaces.
+With no explicit rules, the security appliance permits all connections that arrive to an interface, if these connections are routed to interfaces with lower security levels.
+This behavior is indicated by the incoming rule on the DMZ and inside interfaces as shown in the figure.
+Interface-specific access rules are evaluated before the global access rules.
+
+
+Global access rules were designed to simplify management of policy configurations. 
+If you only define a global ACL policy, it will override all implicit interface access policies (which permit traffic from high-security-level interfaces to low-security-level interfaces). 
+The global policy is used for all sessions. If you want to define specific interface access policies that differ from the global policy, you must configure interface ACLs on those specific interfaces.
+
+The figure below shows the basic interface access rule configuration window.
+Here you can specify the interface where you want to apply the access rule, the source and destination address criteria, and the type of service.
+
+In the figure, the interface access rule allows the internal client (10.1.1.2) to access the external server (172.16.1.8) using HTTP. 
+When no explicit rules are configured on a Cisco ASA security appliance interface, you must add the initial rule to the interface. 
+By default, logging is enabled.
+
+A recommended best practice is to insert explicit deny-all rules at the end of interface access rule sets or at the end of the global access rule set. 
+This configuration is optional, but recommended, because it allows you to track the number of denied packets. 
+The explicit deny-all rule is needed to monitor hit-count statistics for this denied traffic.
+
+Access control entries for global ACLs are entered in the same manner as interface entries.
+The main difference is that the interface specified is the keyword "any". This designates a global access rule entry. 
+The global ACL is evaluated after the rules of any explicitly configured input interface ACLs.
+That is, if no rules in the explicit interface input ACL are matched, evaluation will continue with the rules defined in the global access rule set. 
+Interface ACLs take precedence over the global ACL. 
+If there is no input access rule set defined on the ingress interface, then the global ACL is used to determine access policy.
+
+
+ques1) In which direction can interface access rules be applied?
+both inbound and outbound
+ques2) In which direction can Global access rules be applied?
+only inbound
+
+######################################################
+
+
+3) Configure Object Groups:
+
+A set of interface access rules can cause the Cisco Adaptive Security Appliance (ASA) to permit or deny a designated host to access another particular host with a specific network application (service). 
+When there is only one client, one host, and one service, you only need a minimum number of lines in an interface ruleset. 
+However, as the number of clients, servers, and services increases, the number of rules that you need for each individual access type can increase uncontrollably.
+
+
+One solution for this problem is to group specific hosts into networks (subnets) and allow entire networks to access resources.
+You can also allow complete TCP, UDP, or IP connectivity between hosts, instead of specifying individual services. 
+This approach is suboptimal because it departs from the philosophy of minimal access, which increases risk while allowing unnecessary connectivity.
+
+A better approach is to introduce object grouping. 
+This solution allows you to arbitrarily group hosts, resources, or services that share the same policy, which optimizes the access rules.
+
+In the figure, hosts 172.16.1.2, 172.16.3.4, and 172.16.5.6 are granted SSH and FTP access to host 10.1.1.2 and the 10.3.0.0/16 network.
+Normally, 12 individual interface access rules would be required to specify this policy, listing individual hosts and policies.
+However, if these hosts and services are grouped then the policy can be consolidated into a single rule.
+
+Object group configuration can be accessed using the Cisco Adaptive Security Device Manager (ASDM) menu path of Configuration > Firewall > Objects > Network Objects/Groups > Add > Network Object. 
+The following figures represent a sample Cisco ASDM object group configuration:(fig 4)
+
+Create a service object group. 
+The Cisco ASA security appliance supports six types of service groups. 
+The most generic and flexible of these is the IP service group. 
+You can group any service into an IP service group;
+therefore the IP service group makes obsolete all other service groups that were useful in older versions of Cisco ASA security appliance software.
+
+Use object groups with access rules.
+You can use previously created object groups to develop granular and manageable interface access rules.
+
+4) Introducing Cisco ASA Modular Policy Framework:
+
+Different types of traffic traversing the Cisco Adaptive Security Appliance (ASA) may have different policy requirements.
+For example, you should analyze traffic coming from the Internet for any sign of malicious software, and you should prioritize VoIP traffic on all appliance interfaces to prevent delays and packet losses.
+The Cisco MPF configuration tool enables you to assign different network policies to different traffic flows in a flexible and granular manner.
+The Cisco MPF enhances Cisco ASA security appliance interface ACLs by allowing the administrator to specify many additional access controls on network flows independently of interface ACLs.
+
+ACLs are the fundamental access control method on the Cisco ASA security appliance, and the Cisco MPF tool does not replace them. 
+Instead, Cisco MPF provides an independent configuration tool to provide additional security policies to specific traffic flows.
+
+Cisco MPF consists of the following main components:
+
+a) Class maps: A class map is a basic Cisco MPF object that is used to identify and group a set of particular traffic flows into a traffic class. 
+   A traffic flow is generally an OSI Layer 4 network session between endpoints that is used by a specific application. For example, a voice call can be defined as one traffic flow.
+   For this flow, a class map can identify a traffic class as a set of voice calls between specific hosts or networks across the Cisco ASA security appliance. 
+   You can create class maps for OSI Layers 3 and 4 that classify traffic based only on the OSI Layer 3 and Layer 4 information that is found in a packet.
+   You can also create class maps for OSI Layers 5 through 7, which use application-layer content to identify flows and classify them as part of the same class. 
+   You can also use multiple matching criteria in a class map.
+   
+b) Policy map: You use a policy map to associate one or more actions with a class of traffic for one or more classes. 
+   For example, all voice traffic coming from headquarters to the branch office can be classified into a traffic class and associated with low latency queuing. 
+   To associate an action with a specific traffic class, you would create a policy map, specify a traffic class in the policy map, and associate an action with this specific class of traffic.  
+   You can create policy maps for OSI Layers 3 and 4, which define actions that are applied to traffic classes for these layers. 
+   You can also create policy maps for OSI Layers 5 through 7, which define actions that are applied to traffic classes for these layers.
+   
+c) Service policy: You use a service policy to activate policies by specifying where policy maps should classify and apply actions to traffic.
+   A service policy activates a policy map either on a specific Cisco ASA security appliance interface or globally on all appliance interfaces.
+   For example, you can apply the voice priority queuing policy to the outside interface, where it will identify packets of the voice traffic class and apply the appropriate egress queuing action.   
+
+Cisco ASA uses a policy structure to inspect traffic passing through the appliance.
+
+Service policies provide a consistent and flexible way to configure ASA features. 
+A service policy consists of multiple service policy rules that are applied to an interface or applied globally.
+
+Inspection engines are required for services that embed IP addressing information in the user data packet or that open secondary channels on dynamically assigned ports.
+These protocols require the ASA to do a deep packet inspection instead of passing the packet through the fast path.
+As a result, inspection engines can affect overall throughput. 
+Several common inspection engines are enabled on the ASA by default, but you might need to enable others depending on your network.
+
+How inspection engines work:
+
+ACLs: Used for authentication and authorization of connections based on specific networks, hosts, and services (TCP/UDP port numbers).
+Inspections: Contain a static, predefined set of application-level inspection functions.
+Connections (XLATE and CONN tables): Maintain state and other information about each active connection.
+
+By default, the ASA configuration includes a policy that matches all default application inspection traffic and applies inspection to the traffic on all interfaces (a global policy). 
+Default application inspection traffic includes traffic to the default ports for each protocol. 
+You can only apply one global policy, so if you want to alter the global policy, for example, to apply inspection to nonstandard ports, or to add inspections that are not enabled by default, you need to either edit the default policy or disable it and apply a new one.
+
+
+Default inspections that are contained in the global policy:
+
+
+
+class-map inspection_default
+ match default-inspection-traffic 
+!
+policy-map global_policy
+ class inspection_default
+  inspect dns preset_dns_map
+  inspect ftp
+  inspect h323 h225 _default_h323_map
+  inspect h323 ras _default_h323_map
+  inspect ip-options _default_ip_options_map
+  inspect netbios
+  inspect rsh
+  inspect rtsp
+  inspect skinny
+  inspect esmtp _default_esmtp_map
+  inspect sqlnet
+  inspect sunrpc
+  inspect tftp
+  inspect sip
+  inspect xdmcp 
+!
+service-policy global_policy global
+
+The configuration includes a default traffic class that the ASA uses in the default global policy called Default Inspection Traffic; it matches the default inspection traffic.
+This class, which is used in the default global policy, is a special shortcut to match the default ports for all inspections. 
+When used in a policy, this class ensures that the correct inspection is applied to each packet based on the destination port of the traffic.
+For example, when UDP traffic for port 69 reaches the ASA, then the ASA applies the TFTP inspection; when TCP traffic for port 21 arrives, then the ASA applies the FTP inspection.
+So in this case only, you can configure multiple inspections for the same class map.
+Normally, the ASA does not use the port number to determine which inspection to apply, thus giving you the flexibility to apply inspections to nonstandard ports, for example.
+
+Another class map that exists in the default configuration is called class-default, and it matches all traffic. 
+You can use the class-default class if desired, rather than using the Any traffic class.
+
+
+
+##########################################
+
+
+5) Configuring Cisco MPF Service Policy Rules:
+
+To configure Cisco MPF, you must first configure a class map to classify traffic, then define an action to take on the matched traffic flow in a policy map, then apply the policy with a service policy.
+
+Cisco Adaptive Security Appliance (ASA) class maps allow a richer set of match criteria. You must specify a name for the class map.
+
+Criteria for matching information at Layers 3 and 4:
+
+Access list
+Any packet
+Default inspection traffic
+IP DSCP
+IP flow
+TCP and UDP ports
+IP precedence
+RTP port numbers
+VPN tunnel group
+
+
+Policy maps define an action to take on the traffic that is identified in the class map. 
+Cisco ASA policy maps also allow a richer set of actions. 
+The actions include not only firewall-related functions, such as application inspection or advanced connection settings, but also QoS actions, such as traffic prioritization, and traffic rerouting to hardware modules integrated into the security appliance. 
+You must also specify a name for the policy map.
+
+To apply an action to traffic, perform the following:
+
+Refer to the class map, where traffic is identified.
+Assign an action to each traffic class.
+
+The Cisco ASA security appliance supports one global policy map and one policy map per interface.
+
+Service polices are used to apply policy maps to an interface or globally to all interfaces.
+
+Policy directionality depends on the policy map application:
+
+Per interface: Classification and actions are applied in both directions.
+Globally: Classification and actions are applied to all interfaces in the inbound direction.
+Exceptions for policing, shaping, and prioritizing.
+
+If you use Cisco Adaptive Security Device Manager (ASDM) to configure Cisco MPF software-based policies, the components you must configure are the same as the components you configure when you create network policies using the CLI. 
+However, there are two differences in using Cisco ASDM and the CLI to configure this feature.
+
+
+1) Policies are called service policy rules in Cisco ASDM.
+2) The order in which the components are created is different.
+
+To create a policy for Layers 3 and 4 using Cisco ASDM, perform the following tasks:
+
+1) Create a new service policy rule or edit an existing one.
+2) Identify which traffic to match (class map).
+3) Apply actions to the traffic (policy map)
+
+
+To create the components of a policy for Layers 3 and 4 using the CLI, perform these tasks:
+
+1) Create a class map and identify which traffic to match.
+2) Create a policy map and apply actions to traffic classes.
+3) Apply the policy map to an interface or globally using a service policy.
+
+

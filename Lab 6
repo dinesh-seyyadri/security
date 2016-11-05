@@ -395,4 +395,104 @@ access-list inside_access_in line 1 extended permit object-group DMZ-Services an
 access-list inside_access_in line 2 extended permit ip object-group Admin-Hosts object DMZ-Srv 
 access-group inside_access_in in interface inside
 
+39)
+
+Verify that the policy behaves as expected:
+From the Inside-Srv, attempt to browse the DMZ-Srv (172.16.1.50) using Iceweasel. You should be able to browse the DMZ-Srv.
+From the Inside-Srv, attempt to Telnet to the DMZ-Srv (172.16.1.50) from a terminal window. You should not be able to Telnet to the DMZ-Srv.
+From the Admin-PC, attempt to browse the DMZ-Srv (172.16.1.50) using Firefox. You should be able to browse the DMZ-Srv.
+From the Admin-PC, attempt to Telnet to the DMZ-Srv (172.16.1.50) from a command prompt window. You should be able to Telnet to the DMZ-Srv. Authenticate as guest with the password guest, then use the logout command to terminate the Telnet session.
+
+40)
+
+There is now an ACL in charge of what connections are allowed to originate from the inside interface. 
+It behaves as expected for connections to the DMZ. However, anything that is not explicitly permitted by the ACL is denied.
+Currently connections from the inside to the outside are prohibited.
+Confirm that these connections are prohibited by attempting to browse the Outside-PC (192.168.1.10) from the Admin-PC. 
+The connection attempt should fail.
+
+41)
+
+You will restore connectivity from the inside to the outside while maintaining the new DMZ policy by adding two more entries to the ACL applied to the inside interface. The first new rule will deny all connections to the DMZ-Srv (that were not permitted by the first two rules). The second new rule will permit all connections. Begin by intentionally adding the first new rule in the wrong place in the existing ACL.
+In ASDM, at Configuration > Firewall > Access Rules, select the first rule in the ACL applied to the inside interface, and click Add > Insert. Doing so will place the new rule before the selected rule.
+Enter the following values into the appropriate fields:
+Interface: inside
+Action: deny
+Source: any
+Destination: DMZ-Srv
+Service: ip
+Leave the other fields at their default value and click OK.
+
+42)
+
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+access-list inside_access_in line 1 extended deny ip any object DMZ-Srv
+
+Notice that ASDM explicitly assigned line 1 to the ACL entry. 
+This assignment will push the existing line 1 to line 2 and the existing line 2 to line 3 in the configuration.
+
+43)
+
+As you should expect, the ACL applied to the inside interface now denies all connections. 
+The first line denies all connectivity to the DMZ-Srv, negating the second and third lines.
+Also, there is no explicit permit for hosts other than the DMZ-Srv, so the implied deny at the end of the Global ACL which is evaluated after the entries in the interface ACL is denying all other connections. 
+Verify that the implicit deny is denying all other connections by attempting to browse the DMZ-Srv (172.16.1.50) from Firefox on the Admin-PC.
+.Browsing the DMZ-Srv from Firefox on the Admin-PC worked in a previous step, but now fails.
+
+44)
+
+Fix the ACL order. In the Access-Rules table, select the new rule that denies all connections. 
+Look at the menu immediately above the access rules table. 
+There are many options, including an arrow pointing up and an arrow pointing down.
+Click the arrow pointing down twice to move the selected ACL entry down two places in the table. 
+The deny entry should now be at the end of the ACL.
+
+45)
+
+In the Cisco ASDM main window, click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA.
+Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+46)
+
+Now connectivity to the DMZ is restored. .
+Optionally, you can verify that this connectivity is restored. HTTP, HTTPS, FTP, and ICMP echo should be allowed from the Inside-Srv to the DMZ-Srv. 
+All protocols, including Telnet, should be allowed from the Admin-PC to the DMZ-Srv. 
+Still, access from internal hosts to hosts on the outside is denied.
+
+47)
+
+Add the final entry to the ACL on the inside. The first three entries control access to the DMZ-Srv. If the destination is not the DMZ-Srv, processing will fall through to this new line which permits all connections.
+In ASDM, at Configuration > Firewall > Access Rules, select the inside interface and select Add > Access Rule. 
+Doing so will place the entry at the end of the ACL. (You could also select the last line in the ACL and select Add > Insert After.)
+Enter the following values into the appropriate fields:
+Interface: inside
+Action: permit
+Source: any
+Destination: any
+Service: ip
+Leave the other fields at their default value and click OK.
+
+
+48)
+
+Take a moment to review the order of the entries in the ACL. 
+The first two entries should permit DMZ-Services to the DMZ-Srv from any host and permit any service (all IP) to the DMZ-Srv if the source is an Admin-Host. 
+The third line should deny all other connections to the DMZ-Srv.
+Finally, the fourth line should permit all IP connections except connections that are denied by a previous entry.
+
+49)
+
+In the ASDM main window, click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+access-list inside_access_in line 4 extended permit ip any any
+
+
+50)
+
+Verify connectivity from the inside. From the Admin-PC, you should now be able to browse the Outside-Srv (192.168.1.50), the Outside-PC (192.168.1.10), and the DMZ-Srv (172.16.1.50). You can test other connections between the systems and verify that they match your expectations.
 

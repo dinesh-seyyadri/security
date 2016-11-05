@@ -1,0 +1,398 @@
+1)
+
+Establish an SSH connection to the ASA using PuTTY. Access the desktop of the Admin-PC and launch PuTTY via the desktop icon. 
+Double-click the saved session that is named lab-asa. Authenticate as admin with the password Cisco123!. 
+Enter the enable command, and simply hit Enter when challenged for a password. (The enable password is not configured in the lab environment.)
+
+2)
+
+Service policies are configured on the Cisco ASA using the MPF, a hierarchical framework similar to the Common Classification Policy Language that is used to configure Cisco IOS zone-based firewall. 
+It is also similar to the MQC used to configure quality of service features on IOS. 
+The hierarchy uses three main structures: class maps, policy maps, and service policy statements.
+
+Class maps are used to identify particular flows of traffic. 
+Policy maps are used to define the actions that need to be taken on traffic matching the class maps. 
+Service policy statements define where the policy maps are applied. 
+
+View the service policy statements that are currently defined in the running configuration.
+
+
+lab-asa# show running-config service-policy
+service-policy global_policy global
+
+3)
+
+View the policy map that is named global_policy in the running configuration.
+
+lab-asa# show run policy-map global_policy
+!
+policy-map global_policy
+ class inspection_default
+  inspect rtsp
+  inspect sunrpc
+  inspect xdmcp
+  inspect netbios
+  inspect tftp
+  inspect ip-options
+  inspect dns preset_dns_map
+  inspect ftp
+  inspect h323 h225
+  inspect h323 ras
+  inspect rsh
+  inspect esmtp
+  inspect sqlnet
+  inspect sip
+  inspect skinny
+  
+  
+4)View the class maps that are defined in the current running configuration.
+
+
+lab-asa# show run class-map
+!
+class-map inspection_default
+ match default-inspection-traffic
+ 
+Note:
+
+Notice that there is only one class map that is defined by default.
+As you saw in the previous step, this class map, which is named inspection_default, is referenced by the policy map that is named global_policy and has one match statement that uses a special match default-inspection-traffic command.
+Default-inspection-traffic is a system-defined construct that recognizes command applications by their protocols and port numbers. 
+For example, FTP control uses TCP port 21 and SMTP uses TCP port 25. 
+When configuring policies for particular flows of traffic, class maps commonly match other things such as ACLs, VPN tunnels, or QoS DSCP values.
+Don’t worry about all the details now. 
+If you understand that class maps identify particular flows of traffic, that policy maps identify actions to take on those flows, and service policy statements enable policy maps on specific interfaces or globally on the ASA, you have a basic understanding of the hierarchy.
+
+5)
+
+Before looking further at the configuration of the Cisco ASA, verify that you cannot ping the Outside-Srv (192.168.1.50) from the Admin-PC. 
+Open a command prompt window on the Admin-PC and execute the ping. It should result in timeouts.
+
+Note:
+
+This behavior is because the ASA does not inspect ICMP by default. 
+Without inspection, it does not track the outbound ICMP echo request in the state table, and hence it does not expect an inbound ICMP echo reply. 
+The echo replies are dropped as they arrive at the outside interface. 
+You will enable ICMP inspection later in this section of the discovery exercise
+
+6)
+
+Launch Cisco ASDM from the desktop of the Admin-PC using the icon on the desktop.
+Connect to the lab-asa (10.1.1.1) and authenticate as admin with the password Cisco123!.
+
+7)
+
+In Cisco ASDM, navigate to Configuration > Firewall > Service Policy Rules. The Service Policy Rules table appears.
+
+8)
+
+Examine the contents of the Service Policy Rules table, comparing it to what you saw in the command-line representation of the lab-asa’s configuration.
+
+Note the following:
+a) The line showing “Global; Policy: global_policy” indicates that the policy map named global_policy is applied globally. 
+   This line represents the service policy statement. 
+   The lines that are expanded underneath it are associated with the class maps that are referenced by the service policy statement.
+   
+b) One class map is referenced. It is named inspection_default, as you saw from the lab-asa’s command line.
+
+c) The Service column shows what the class map actually matches upon. In this case, it is default-inspection-traffic.
+
+d) The Rule Actions column shows what actions are taken upon matching traffic.
+   There are a total of 15 inspections defined.
+   If you hover the mouse pointer over this cell in the table, all 15 are displayed in a tool tip.
+   
+e) ICMP is not included in the list of active inspections.
+
+9) Select the inspection_default row in the table and click Edit. The Edit Service Policy Rule window appears.
+
+10)
+
+Notice that there are three tabs in the window.
+The window allows the definition of a class map and the actions that the policy map will take upon traffic that is matched by the class map.
+
+a) The Traffic Classification tab specifies the class map. 
+   As you can see, the class map is named inspection_default, and it matches the checked Default Inspection Traffic.
+   This matches the class map definition that you saw via the command line.
+   
+b) There are several other options available for more complex scenarios. 
+   These include matching an ACL, a VPN tunnel group, or QoS identifiers such as IP precedence and DSCP.
+   
+c) The Default Inspection tab only appears when Default Inspection Traffic is selected on the Traffic Classification tab.
+   It simply provides a reference as to which protocols and port numbers are associated with which applications by default.   
+   
+d) The Rule Actions tab has five subtabs itself. 
+   The only subtab that can be used with the Default Inspection Traffic class is Protocol Inspection. 
+   The checked protocols will receive the appropriate deeper inspection options.
+   ICMP is not checked by default.
+   
+11) From the Edit Service Policy Window, select Rule Actions > Protocol Inspection. Note that ICMP is not yet checked. Check ICMP and click OK.
+
+12) In the ASDM main window, click Apply. 
+    The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. 
+    Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+    
+13) Return to the command prompt window on the Admin-PC. 
+   Attempt to ping the Outside-Srv (192.168.1.50) again. This time, the ping should succeed.
+   
+   
+   
+##################
+
+Object Groups:
+
+Generally NAT is configured for an individual host or a network by creating a named network object that specifies the host or network address and the translated address. 
+This network object name can then be referenced by ACLs on the Cisco ASA. 
+Furthermore, multiple network objects can be combined into network object groups which can also be referenced by ACLs. 
+You can also create service object groups that allow you to assign a name to a collection of protocols and port numbers and reference them in ACLs.
+If object groups are used effectively, much of the ACL maintenance is done within object group configuration. 
+For example, if the web server IP addresses are defined in a network object group, when a new server is deployed or an old server is retired, the change can be implemented by editing the object group without editing ACL entries.
+
+In this section of the discovery exercise, you will examine the network objects that are in the current configuration on the Cisco ASA..
+You will then create network object groups and service object groups for use and maintenance in later sections of the discovery.
+
+14)
+In ASDM on the Admin-PC, navigate to Configuration > Firewall > Objects > Network Objects/Groups.
+The Network Objects Group table is displayed. Examine the current entries in the table.
+
+Answer
+
+Note the following:
+
+a) There are three system-defined “any” network objects available for use within ACLs.
+   One is generic, one is associated with IPv4, and the other is associated with IPv6.
+
+b) There are automatically generated object groups associated with the networks to which the ASA directly connects.
+   They are named <Interface Name>-network. In this case, there are inside-network, outside-network, and dmz-network object groups.
+   
+c) There are network objects that are associated with NAT configuration performed in the previous discovery exercise.
+   There is inside-network specifying a PAT translation from 10.1.1.0/24 to the IP address of the outside interface.
+   There is also DMZ-Srv, which specifies a static NAT translation from the IP address 172.16.1.50 to 192.168.1.100.
+   The third network object is an artifact that is displayed in ASDM but not in the running configuration that is seen on the command line.
+   It is a nameless network object for the 192.168.1.100 address that is referenced in the DMZ-Srv NAT specification.
+   
+15) Network objects specify a single host address, a network address with a mask, or range of IP addresses.
+    Add a network object that will allow you to reference the Admin-PC (10.1.1.10) by name.
+    In ASDM, click Add > Network Object. The Add Network Object window opens.
+
+Specify the following field definitions:
+Name: Admin-PC
+Type: Host
+IP Address: 10.1.1.10
+Click OK.
+
+16) In the ASDM main window, click Apply. 
+    The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA.
+    Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+    
+    object network Admin-PC
+    host 10.1.1.10
+    
+17) Network object groups allow you to group one or more network objects. Create a network object group named Admin-Hosts. Include the Admin-PC network object and the IP address 10.1.1.11 for demonstration purposes only. (This address is not active in the lab environment.)
+* Start by selecting Add > Network Object Group. The Add Network Object Group window opens.
+* Enter Admin-Hosts in the Group Name field.
+* Select Admin-PC in the Existing Network Objects/Groups list and click Add to put Admin-PC in the Members in Group list.
+* Enter 10.1.1.11 in the IP Address field of the Create New Network Object Member section, and click Add to add 10.1.1.11 to the Members in Group list.
+  Click OK in the Add Network Object Group window. 
+  
+18) Click Apply in the main ASDM window. 
+    The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. 
+    If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+    
+    
+object-group network Admin-Hosts
+     network-object host 10.1.1.11
+     network-object object Admin-PC
+    
+19) Create a service object group that is named DMZ-Services that includes HTTP, HTTPS, and FTP.
+    Start by navigating to Configuration > Firewall > Objects > Service Objects/Groups and selecting Add > Service Group. The Add Service Group window opens.
+    Enter DMZ-Services in the Group Name field.
+    Select TCP FTP in the Existing Service/Service Group list and click Add to add it to the Members in Group list.
+    Select TCP HTTP in the Existing Service/Service Group list and click Add to add it to the Members in Group list.
+    Select TCP HTTPS in the Existing Service/Service Group list and click Add to add it to the Members in Group list.
+Click OK in the Add Service Group window.
+
+
+20)
+
+Click Apply in the main ASDM window.
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+object-group service DMZ-Services
+      service-object tcp destination eq ftp
+      service-object tcp destination eq http
+      service-object tcp destination eq https
+      
+      
+
+Outside Interface Policy:
+
+Because the outside interface has the lowest security level, currently no connections are allowed to originate from the outside.
+In this section of the lab, you will assign an ACL to the outside interface to permit certain connections to the DMZ-Srv from the outside.
+You will leverage the service object group that is named DMZ-Services that you created in the previous section of the discovery.
+
+
+21)In ASDM, navigate to Configuration > Firewall > Access Rules. The Access Rules table is displayed. Examine the rules in the table.
+
+22) 
+
+Add an access rule to the outside interface that permits HTTP, HTTPS, and FTP (DMZ-Services) to the DMZ-Srv.
+Start by selecting the outside interface and clicking Add > Add Access Rule. The Add Access Rule window opens.
+
+Enter the following values into the appropriate fields:
+Interface: Outside
+Action: Permit
+Source: any
+Destination: DMZ-Srv (You can type DMZ-Srv or select DMZ-Srv by using the ellipses (…) button.)
+Service: DMZ-Services (You can type DMZ-Services or select DMZ-Services by using the ellipses (…) button.)
+
+Leave the other fields at their default value and click OK.
+
+23)
+
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA.
+Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+access-list outside_access_in line 1 extended permit object-group DMZ-Services any object DMZ-Srv 
+access-group outside_access_in in interface outside
+
+Notice that an access rule in ASDM is really the combination of an access list entry and the application of that access list to an interface using the access-group command.
+
+
+access-list outside_access_in line 1 extended permit object-group DMZ-Services any object DMZ-Srv 
+access-group outside_access_in in interface outside
+
+24)Verify this policy. Access the desktop of the Outside-PC. Use the Firefox web browser on the Outside-PC to attempt to browse the translated address of the DMZ-Srv (192.168.1.100).
+The web page of the DMZ-Srv should be displayed.
+
+25) Change the URL to https://192.168.1.100.
+    The Outside-PC will not trust the SSL certificate that is presented by the DMZ-Srv, so security warnings will be displayed, but the connection is allowed through the ASA.
+
+26)
+Open a command prompt window on the Outside-PC and attempt to ping 192.168.1.100. 
+The ping should result in timeouts. Earlier in this discovery you enabled the inspection of ICMP, so an echo reply will be allowed in response to an ICMP echo.
+But, the ICMP echo itself must be permitted, and it is not permitted inbound on the outside interface.
+
+27)
+
+Update the policy for the DMZ-Srv by updating the DMZ-Services service object group to include ICMP echo.
+Return to the Admin-PC, and navigate to Configuration > Firewall > Objects > Service Objects/Groups in ASDM.
+Select the DMZ-Services service group and click Edit.
+Select ICMP4 echo in the Existing Service/Service Group list and click Add to move it to the Members in Group list.
+Click OK.
+
+28)
+
+In the ASDM main window, click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. 
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+29)
+
+Verify the updated policy. 
+Return to the desktop of the Outside-PC and attempt to ping the DMZ-Srv’s translated address (192.168.1.100).
+This time the ping should succeed.
+
+30)
+
+Before configuring a policy, verify that the DMZ-Srv can connect to systems on the outside by connecting to the Outside-Srv via FTP.
+Access the desktop of the DMZ-Srv.
+Open a terminal window.
+FTP to the Outside-Srv (192.168.1.50). 
+The connection should be successful. Authenticate as anonymous with any password. 
+Then use the bye command to terminate the FTP client.
+
+31)
+
+Assign an ACL to the lab-asa’s dmz interface that explicitly denies all connections.
+Return to the desktop of the Admin-PC, and in Cisco ASDM, navigate to Configuration > Firewall > Access Rules.
+Select the dmz interface in the Access-Rules table and click Add > Add Access Rule.
+Enter the following values into the appropriate fields:
+Interface: dmz
+Action: deny
+Source: any
+Destination: any
+Service: ip
+Leave the other fields at their default value and click OK.
+
+
+32)
+
+In the ASDM main window, click Apply. 
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands.
+If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+access-list dmz_access_in line 1 extended deny ip any any 
+access-group dmz_access_in in interface dmz
+
+33)
+
+Verify that the DMZ-Srv can no longer connect to systems on the outside by attempting to connect to the Outside-Srv via FTP.
+Access the desktop of the DMZ-Srv.
+Use the Terminal window to attempt to FTP to the Outside-Srv (192.168.1.50). The connection should not succeed. Use the bye command to terminate the FTP client.
+
+34)
+
+This configuration prevents connections from originating from the DMZ-Srv, but it does not prevent return traffic from the DMZ server for connections that originated on other interfaces. 
+Verify that the DMZ-Srv is still reachable from the Outside-PC. 
+Return to the desktop of the Outside-PC and browse the DMZ-Srv using HTTP (http://192.168.1.100). 
+You should be able to browse the DMZ-Srv.
+
+Inside Interface Policy:
+
+Currently the inside interface has no ACL assigned and it has the highest security level of all interfaces. 
+As such, all connections originating from the inside are permitted.
+In this section of the discovery, you will limit access to the DMZ-Srv from the inside to the same services that are permitted from the outside.
+The exception will be that Admin-Hosts (utilizing the network object group you created earlier in this discovery) will be allowed to connect to the DMZ-Srv without restrictions.
+
+35)
+
+Telnet is a service that is not included within the DMZ-Services service group. Verify that the Inside-Srv can currently connect to the DMZ-Srv via Telnet:
+* Access the desktop of the Inside-Srv.
+* Open a Terminal window.
+* Telnet to the DMZ-Srv at IP address 172.16.1.50. (NAT is not configured between the DMZ and the inside.)
+The connection should succeed. Authenticate as guest with the password guest. 
+Then use the logout command to close the Telnet connection.
+
+
+
+36)
+
+Add an access rule to the inside interface that permits any host to connect to the DMZ-Srv as long as it uses a service included in the service group DMZ-Services.
+Return to the desktop of the Admin-PC.
+In Cisco ASDM, navigate to Configuration > Firewall > Access Rules.
+Select the inside Interface and click Add > Add Access Rule.
+Enter the following values into the appropriate fields:
+Interface: inside
+Action: permit
+Source: any
+Destination: DMZ-Srv
+Service: DMZ-Services
+Leave the other fields at their default value and click OK.
+
+37)
+
+Add another rule that permits all connections to the DMZ-Srv from hosts that are defined in the Admin-Hosts object group.
+First, select the rule that you just added under the inside interface. Then click Add to see the options that are available. In multiline ACLs, order of entries can be very important. The options allow you to specify where the new entry will be placed.
+Add Access Rule: Places the new entry at the end of an existing ACL
+Insert: Places the new entry before the selected entry
+Insert After: Places the new entry after the selected entry
+It does not make a difference at this point in the scenario, but select Add > Insert After.
+Enter the following values into the appropriate fields:
+Interface: inside
+Action: permit
+Source: Admin-Hosts
+Destination: DMZ-Srv
+Service: ip
+Leave the other fields at their default value and click OK.
+
+38)
+
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. 
+Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+access-list inside_access_in line 1 extended permit object-group DMZ-Services any object DMZ-Srv 
+access-list inside_access_in line 2 extended permit ip object-group Admin-Hosts object DMZ-Srv 
+access-group inside_access_in in interface inside
+
+

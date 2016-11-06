@@ -1,0 +1,40 @@
+The zone-based policy firewall changes the original implementation of Cisco IOS Classic Firewall stateful inspection from the older interface-based model to a more flexible, more easily understood zone-based configuration model. 
+This section focuses on the features of Cisco IOS zone-based policy firewalls and how to configure them.
+
+1) Zone-Based Policy Firewall Overview
+2) Zones and Zone Pairs
+3) Introduction to Cisco Common Classification Policy Language
+4) Default Policies, Traffic Flows, and Zone Interaction
+5) Cisco Common Classification Policy Language Configuration Overview
+6) Configuring Zone-Based Policy Firewall Class-Maps
+7) Configuring Zone-Based Policy Firewall Policy-Maps
+8) Exploring Cisco IOS Zone-Based Firewall
+
+1) Zone-Based Policy Firewall Overview:
+
+The zone-based policy firewall offers an easily understood zone-based configuration model.
+Interfaces are assigned to zones, and an inspection policy is applied to traffic moving between the zones. 
+You can group physical and virtual interfaces into zones. 
+Interzone policies offer considerable flexibility and granularity, which enables you to apply different inspection policies to multiple host groups that are connected to the same router interface.
+
+Zone-based policy firewalls are configured with the Cisco Common Classification Policy Language, 
+which employs a hierarchical structure to define inspection for network protocols and the groups of hosts to which the inspection will be applied.
+
+Old interface model for statefull firewall on IOS is CBAC(Context based access control).**Default action in CBAC was to allow traffic whereas in zone based firewall default action is to deny.
+
+Cisco IOS zone-based policy firewall supports the following features:
+a) Stateful inspection
+b) Application inspection
+c) URL filtering
+d) Per-policy connection parameters
+e) Transparent firewall
+f) Virtual routing and forwarding-aware firewall
+
+Benefits of Zone-Based Policy Firewall:
+
+Zones establish the security borders of your network.
+A zone defines a boundary where traffic is subjected to policy restrictions as it crosses to another region of your network.
+The default policy of a zone-based policy firewall between zones is to "deny all." 
+If no policy is explicitly configured, all traffic moving between zones is blocked.
+The Cisco Common Classification Policy Language structure is similar to the MQC structure in which class maps are used to categorize traffic and policy maps are used to specify policy to be applied to each traffic category.
+

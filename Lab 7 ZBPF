@@ -1,0 +1,321 @@
+1)
+
+Access the console of the lab-rtr. Access privileged mode on the router (there is no enable secret configured), then access configuration mode.
+
+lab-rtr>enable
+lab-rtr#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+lab-rtr(config)#
+
+2)
+
+Define a security zone named Inside, provide a simple description for the zone, and assign interface Gi0/1 to the zone.
+
+lab-rtr(config)#zone security inside
+lab-rtr(config-sec-zone)#description Trusted Internal Networks
+lab-rtr(config-sec-zone)#exit
+lab-rtr(config)#int gi0/1
+lab-rtr(config-if)#zone-member security inside
+lab-rtr(config-if)#exit
+lab-rtr(config)#
+
+3)
+
+Define a security zone named DMZ, provide a simple description for the zone, and assign interface Gi0/2 to the zone.
+
+lab-rtr(config)#zone security DMZ
+lab-rtr(config-sec-zone)#description DMZ Services Available to Internet
+lab-rtr(config-sec-zone)#exit
+lab-rtr(config)#int gi0/2
+lab-rtr(config-if)#zone-member security DMZ
+lab-rtr(config-if)#exit
+lab-rtr(config)#
+
+4)
+Define a security zone named Outside, provide a simple description for the zone, and assign interface Gi0/3 to the zone.
+
+lab-rtr(config)#zone security outside
+lab-rtr(config-sec-zone)#description Untrusted Internet
+lab-rtr(config-sec-zone)#exit
+lab-rtr(config)#int gi0/3
+lab-rtr(config-if)#zone-member security outside
+lab-rtr(config-if)#end
+lab-rtr#
+
+5)
+Verify the zone configuration and interface assignment using the show zone security command
+
+lab-rtr#show zone security
+zone self
+Description: System Defined Zone 
+
+zone inside
+ Description: Trusted Internal Networks 
+ Member Interfaces: 
+ GigabitEthernet0/1 
+
+zone DMZ
+ Description: DMZ Services Available to Internet 
+ Member Interfaces: 
+ GigabitEthernet0/2 
+
+zone outside
+ Description: Untrusted Internet 
+ Member Interfaces: 
+ GigabitEthernet0/3
+ 
+ 6)
+ Verify that there are no policies that are configured between the zone pairs (yet) using the show zone-pair security command.
+ 
+ 
+lab-rtr#show zone-pair security
+lab-rtr#
+
+<…no zone pair policy is displayed…>
+
+7)
+
+By default, IOS zone-based firewall denies all traffic between security zones unless certain traffic is explicitly permitted. 
+At this point, no traffic should be allowed to cross the lab-rtr. 
+Verify that is the case. Access the desktop of the Admin-PC. 
+Open a command prompt window and attempt to ping the DMZ-Srv (172.16.1.50) and the Outside-Srv (192.168.1.50). 
+Optionally, attempt using other protocols such as HTTP or FTP or attempt connections using the DMZ-Srv or Outside-Srv as the source.
+
+Note: The IP addresses assigned directly to the router are associated with a system defined security zone called the self zone. 
+By default, sessions to and from the self zone are implicitly permitted.
+
+
+Define and Verify Policies for DMZ Access:
+
+In this section of the discovery, you will define a policy for DMZ access. 
+Class maps are used to specify the characteristics of different categories of traffic. 
+Class maps can reference other class maps. You will leverage this capability by creating a hierarchy of class maps. 
+First you will create a class map that is named DMZ-Services that specifies the acceptable protocols. 
+Then you will define an ACL named DMZ-Servers that specifies the acceptable destination addresses. 
+In this scenario, there is just one address, the DMZ-Srv. 
+In larger environments, there could be several servers requiring the same policy. 
+You will then create a second class-map that is named Permitted-DMZ-Sessions which matches when both the DMZ-Services class map and the DMZ-Servers ACL are matched.
+Policy maps define the actions to perform on particular classes of traffic. 
+You will define a policy map that is named DMZ-Access-Policy that permits traffic using stateful inspection if it matches the Permitted-DMZ-Sessions class map.
+Lastly, service policy statements define where policy maps are assigned. You will apply the DMZ-Access-Policy policy to both an Inside-to-DMZ zone pair and an Outside-to-DMZ zone pair. 
+You will verify the configuration and the resulting behavior.
+
+
+8)
+
+Create a class-map type inspect named DMZ-Services that will match any one of the following protocols: HTTP, FTP, or ICMP.
+
+lab-rtr#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+lab-rtr(config)#class-map type inspect match-any DMZ-Services
+lab-rtr(config-cmap)#match protocol ftp
+lab-rtr(config-cmap)#match protocol http
+lab-rtr(config-cmap)#match protocol icmp
+lab-rtr(config-cmap)#exit
+lab-rtr(config)#
+
+9)
+
+Define an extended IP ACL named DMZ-Servers that allows all IP traffic to the DMZ-Srv (172.16.1.50).
+
+lab-rtr(config)#ip access-list extended DMZ-Servers
+lab-rtr(config-ext-nacl)#permit ip any host 172.16.1.50
+lab-rtr(config-ext-nacl)#exit
+lab-rtr(config)#
+
+10)
+
+Create a class-map type inspect named Permitted-DMZ-Sessions. 
+Configure this class map to match traffic that matches both the DMZ-Services class map and the DMZ-Servers ACL.
+
+lab-rtr(config)#class-map type inspect match-all Permitted-DMZ-Sessions
+lab-rtr(config-cmap)#match class-map DMZ-Services
+lab-rtr(config-cmap)#match access-group name DMZ-Servers
+lab-rtr(config-cmap)#exit
+lab-rtr(config)#
+
+11)
+
+
+Define a policy-map type inspect named DMZ-Access-Policy. 
+Specify that traffic that matches the class Permitted-DMZ-Sessions is allowed with stateful inspection enabled.
+
+
+lab-rtr(config)#policy-map type inspect DMZ-Access-Policy 
+lab-rtr(config-pmap)#class type inspect Permitted-DMZ-Sessions
+lab-rtr(config-pmap-c)#inspect
+lab-rtr(config-pmap-c)#end
+lab-rtr#
+
+12)
+
+Use the show policy-map type inspect command to review the configuration of the DMZ-Access-Policy policy map.
+
+lab-rtr#show policy-map type inspect
+  Policy Map type inspect DMZ-Access-Policy
+    Class Permitted-DMZ-Sessions
+      Inspect
+      
+13) Define a zone pair that is named Outside-To-DMZ with the outside zone being the source and the DMZ zone being the destination. 
+   Apply the DMZ-Access-Policy policy map to this zone pair.
+   
+   lab-rtr#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+lab-rtr(config)#zone-pair security Outside-To-DMZ source outside destination DMZ       
+lab-rtr(config-sec-zone-pair)#service-policy type inspect DMZ-Access-Policy
+lab-rtr(config-sec-zone-pair)#exit
+lab-rtr(config)#
+
+14) Define a similar zone pair that is named Inside-To-DMZ with the inside zone being the source and the DMZ zone being the destination. 
+    Also apply the DMZ-Access-Policy policy map to this zone pair.
+    
+lab-rtr(config)#zone-pair security Inside-To-DMZ source inside destination DMZ  
+lab-rtr(config-sec-zone-pair)#service-policy type inspect DMZ-Access-Policy
+lab-rtr(config-sec-zone-pair)#end                                         
+lab-rtr#
+
+15) Use the show zone-pair security command to verify that the zone pairs you just created are properly defined with the DMZ-Access-Policy applied.
+
+lab-rtr#show zone-pair security
+Zone-pair name Outside-To-DMZ
+    Source-Zone outside  Destination-Zone DMZ 
+    service-policy DMZ-Access-Policy
+Zone-pair name Inside-To-DMZ
+    Source-Zone inside  Destination-Zone DMZ 
+    service-policy DMZ-Access-Policy
+    
+16) Verify that ICMP, FTP, and HTTP are permitted from the inside to the DMZ. Perform the following tests from the desktop of the Admin-PC. They should all succeed:
+Ping the DMZ-Srv (172.16.1.50) from a command prompt window.
+FTP to the DMZ-Srv from a command prompt. Authenticate as anonymous. A password is not required. Successful login implies that FTP sessions are allowed. Use the bye command to terminate the FTP client.
+Browse the DMZ-Srv using Firefox.
+
+17)
+Verify that other protocols are denied by the zone-based policy. Perform the following tests from the desktop of the Admin-PC. They should all fail.
+Telnet to the DMZ-Srv (172.16.1.50) from a command prompt window.
+Explicitly specify HTTPS in a browser using the URL https://172.16.1.50.
+
+18)
+
+Optionally, you can repeat the last two steps from the desktop of the Outside-PC. 
+The same policy is implemented for the outside to the DMZ as is implemented from the inside to the DMZ. 
+You can also verify that no connectivity is allowed from the inside to the outside or the outside to the inside as the associated zone-pairs have not yet been configured.
+
+19)
+
+View the state table on the lab router when there are active TCP sessions.
+Since HTTP sessions are short-lived, work with FTP. From a command prompt window on the Admin-PC, FTP to the DMZ-Srv. 
+Authenticate as anonymous. Retrieve the file OneHundredMB.bin with the get command. 
+This copy will take considerable time to complete. 
+While the copy is progressing, access the lab-rtr console and display the state table with the command show policy-map type inspect zone-pair Inside-To-DMZ sessions. 
+You should see two active connections, the FTP control channel and the FTP data channel.
+Return to the Admin-PC and use <Ctrl-C> to terminate the copy and then bye to exit the FTP client.
+
+#####
+
+lab-rtr#show policy-map type inspect zone-pair Inside-To-DMZ sessions
+policy exists on zp Inside-To-DMZ
+  Zone-pair: Inside-To-DMZ 
+  Service-policy inspect : DMZ-Access-Policy
+<…output omitted…>
+      Number of Established Sessions = 2
+      Established Sessions
+        Session F6A1CB0 (10.1.1.10:1051)=>(172.16.1.50:21) ftp:tcp SIS_OPEN/TCP_ESTAB 
+          Created 00:02:48, Last heard 00:00:04
+          Bytes sent (initiator:responder) [94:323]
+        Session F6A2380 (172.16.1.50:20)=>(10.1.1.10:1053) ftp-data:tcp SIS_OPEN/TCP_ESTAB 
+          Created 00:00:04, Last heard 00:00:00
+          Bytes sent (initiator:responder) [1024880:0]
+    Class-map: class-default (match-any)  
+      Match: any 
+      Drop
+        21 packets, 644 bytes
+        
+        
+######
+
+
+Note:
+
+a) There are two active sessions in the session table. From the output, it is apparent which system initiated the connection. 
+   The IP addresses and TCP ports are indicated, along with timers and data counts.
+
+b) Traffic that does not match the class maps that are specified in the policy will match the system-defined class default, which has a default policy of drop.
+
+#####
+
+
+Define and Verify an Inside to Outside Policy
+
+In this section of the discovery, you will define a class map that is named Inside-To-Outside-Protocols that specifies the traffic to be permitted with stateful inspection from the inside zone to the outside zone.
+This policy will be a much more open policy than was configured for DMZ access. 
+You will match the TCP protocol, which includes all single channel TCP applications. 
+You will still need to explicitly specify the FTP protocol as it needs to be treated more carefully than general TCP applications.
+This is because it dynamically negotiates data connections.
+It takes explicit inspection of the FTP control channel to guarantee that the dynamically negotiated data connections are also allowed.
+Note that the match FTP must precede the match TCP, otherwise the more general match will be used, and generic TCP inspection will apply to FTP traffic.
+You will also match the protocol ICMP, which will allow echo replies to return for any permitted echo requests.
+You will then reference this class map in a policy-map named Inside-To-Outside-Policy. 
+Finally, you will use a service policy statement to assign the policy map to a new zone pair named Inside-To-Outside.
+Of course, you will verify the configuration and the resulting firewall behavior.
+
+
+20)
+
+Define a class-map type inspect named Inside-To-Outside-Protocols. The class map must match any of the following protocols: FTP, TCP, or ICMP. 
+Be sure to specify FTP first so FTP traffic is properly classified over the more general TCP traffic.
+
+-rtr#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+lab-rtr(config)#class-map type inspect match-any Inside-To-Outside-Protocols
+lab-rtr(config-cmap)#match protocol ftp 
+lab-rtr(config-cmap)#match protocol tcp
+lab-rtr(config-cmap)#match protocol icmp
+lab-rtr(config-cmap)#exit
+lab-rtr(config)#
+
+21)
+
+Define a policy map that is named Inside-To-Outside-Policy that specifies that traffic matching the Inside-To-Outside-Protocols class map should be allowed with stateful inspection.
+
+lab-rtr(config)#policy-map type inspect Inside-To-Outside-Policy
+lab-rtr(config-pmap)#class type inspect Inside-To-Outside-Protocols
+lab-rtr(config-pmap-c)#inspect
+lab-rtr(config-pmap-c)#exit
+lab-rtr(config-pmap)#exit
+lab-rtr(config)#
+
+22)
+
+Define a zone pair that is named Inside-To-Outside with the inside as the source and the outside as the destination. 
+Apply the policy map Inside-To-Outside-Policy to this zone pair.
+
+
+lab-rtr(config)#zone-pair security Inside-To-Outside source inside destination outside 
+lab-rtr(config-sec-zone-pair)#service-policy type inspect Inside-To-Outside-Policy    
+lab-rtr(config-sec-zone-pair)#exit
+lab-rtr(config)#
+
+23)
+
+Verify that ICMP, FTP, and general TCP applications are permitted from the inside to the outside. Execute the following tests from the desktop of the Admin-PC. All these tests should succeed:
+Ping the Outside-Srv (192.168.1.50) from a command prompt window.
+FTP to the Outside-Srv from a command prompt window. Authenticate as anonymous. After successful connection, use the bye command to terminate the FTP client.
+Browse the Outside-Srv using Firefox.
+Explicitly specify HTTPS in the browser using the URL https://192.168.1.50. This specification will result in security warnings because the browser will not trust the certificate that is presented by the Outside-Srv. The fact that the browser retrieved the server certificate is proof that the connection was established through the firewall. Optionally, you can confirm the security exception and browse the Outside-Srv via HTTPS.
+Telnet to the Outside-Srv from a command prompt. It will take a few seconds for the server to respond, due to the Telnet server configuration on the Outside-Srv. Authenticate as guest with the password guest. Use the logout command to terminate the connection.
+
+24)
+
+No policy has been configured for the outside zone to the inside zone. 
+All attempts to reach the inside from the outside should still be prohibited. 
+Verify this action. Access the desktop of the Outside-PC.
+All attempts to access the Inside-Srv (10.1.1.50) or the Admin-PC (10.1.1.10) should fail.
+You may attempt ping, FTP, Telnet, HTTP, or HTTPS. All will fail.
+
+
+   
+
+
+
+
+

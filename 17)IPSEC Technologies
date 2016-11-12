@@ -1,0 +1,184 @@
+The IPsec VPN is an essential tool for providing a secure network for business communication. 
+This section addresses the different protocols and algorithms that IPsec uses and the different security services that IPsec provides.
+
+Review one or more topics before taking the challenge.
+
+1)  IPsec VPNs
+2)  IPsec Security Services
+3)  IPsec Framework
+4)  Internet Key Exchange
+5)  IKE Phase 1
+6)  Sample ISAKMP Configuration
+7)  IPsec Protocols
+8)  IKE Phase 2
+9)  IPsec Configuration
+10) Suite B Cryptographic Standard
+11) IKE Version 2
+12) IPsec with IPv6
+
+1)  IPsec VPNs:
+
+IPsec VPNs provide security services to traffic traversing a relatively less trustworthy network between two relatively more trusted systems or networks. The less-trusted network is usually the public Internet. 
+But IPsec VPNs can also be used for things like protecting network management traffic as it crosses an organization intranet.
+
+In terms of deployment mode, there are two basic types of VPNs: site-to-site VPNs and remote-access VPNs.
+
+A site-to-site VPN is an extension of a classic WAN network. Site-to-site VPNs connect entire networks to each other.
+For example, site-to-site VPNs can connect a branch office network to a company headquarters network. 
+In the past, a leased-line or Frame Relay connection was required to connect sites, but because most corporations now have Internet access, these connections can be replaced with site-to-site VPNs.
+
+
+Transport across a site-to-site VPN is transparent to the communicating hosts. 
+The hosts send and receive normal TCP/IP traffic between each other. 
+VPN gateways provide security services at the borders between the trusted and nontrusted networks. 
+A VPN gateway is responsible for encrypting packets that are destined for the peer network, attaching message authentication codes, and encapsulating the protected data using a new IP header. 
+The transformed packet is routed across the untrusted network that is based on the VPN gateway IP addresses specified in the new IP header. 
+Upon receipt, the peer VPN gateway strips the headers, verifies and decrypts the content, and relays the original packet towards the target host inside its private network.
+ 
+Remote-access VPN is an evolution of dialup connections. 
+Remote-access VPNs can support the needs of telecommuters, mobile users, and extranet consumer-to-business traffic. 
+Remote-access VPNs connect individual hosts that must access their company network securely over the Internet. 
+
+In the past, corporations supported remote users by using dial-in networks and ISDN. 
+With the advent of VPNs, a mobile user simply needs access to the Internet to communicate with the central office. 
+For telecommuters, their Internet connectivity is typically a broadband, DSL, or cable connection.
+ 
+ 
+In a remote-access VPN, each host typically has Cisco AnyConnect VPN Client software. 
+Whenever the host tries to send any traffic, the Cisco VPN Client software encapsulates and encrypts that traffic before sending it over the Internet to the VPN gateway at the edge of the target network. 
+Upon receipt, the VPN gateway behaves the same way that it does for site-to-site VPNs.
+
+If a VPN is used to connect entities belonging to the same organization, it is considered an intranet VPN.
+If a VPN is used to connect entities belonging to two different organizations, it is considered to be an extranet VPN.
+This distinction is separate from site-to-site and remote access.
+Site-to-site VPNs can be used for both intranet and extranet connections.
+Similarly, remote-access VPNs can be used for both intranet and extranet connections.
+
+While the focus of this section of the course is IPsec VPN technology, it is important to recognize that there are other VPN technologies.
+
+SSL provides a suite of security services that is similar to the security services provided by IPsec.
+SSL VPN has become popular for the implementation of remote-access VPNs.
+IPsec remains dominant for the implementation of site-to-site VPNs. SSL VPN will be covered in a later section of the course.
+
+
+IPsec and SSL VPNs are both cryptography-based VPNs.
+VPNs can also be network-based. 
+For example, a service provider can use a technology such as Frame Relay, ATM, or, more recently, MPLS to segregate customer traffic as it crosses a shared infrastructure.
+The service provider is providing a network that is virtually private. 
+While traffic physically crosses shared infrastructure, there is no mixing of traffic.
+One customer cannot see another customer’s traffic. 
+This behavior is different from IPsec VPN, which uses cryptographic technologies to transform packet data to provide privacy, data integrity, and origin authentication.
+
+2)  IPsec Security Services:
+
+IPsec provides these essential security functions:
+
+a) Confidentiality: IPsec ensures confidentiality by using encryption.
+   Data encryption prevents third parties from reading the data. Only the IPsec peer can decrypt and read the encrypted data.
+
+b) Data integrity: IPsec ensures that data arrives unchanged at the destination, meaning that the data has not been manipulated at any point along the communication path. 
+   IPsec ensures data integrity by using hash-based message authentication.
+
+c) Origin authentication: Authentication ensures that the connection is made with the desired communication partner.
+   Extended authentication can also be implemented to provide authentication of a user behind the peer system. 
+   IPsec uses IKE to authenticate users and devices that can carry out communication independently. 
+   IKE can use the following methods to authenticate the peer system:
+    PSKs
+    Digital certificates
+    RSA encrypted nonces
+ 
+d) Antireplay protection: Antireplay protection verifies that each packet is unique and is not duplicated. 
+   IPsec packets are protected by comparing the sequence number of the received packets with a sliding window on the destination host or security gateway. 
+   A packet that has a sequence number that comes before the sliding window is considered either late, or a duplicate packet. 
+   Late and duplicate packets are dropped.
+   
+f) Key management: Allows for an initial exchange of dynamically generated keys across a nontrusted network and a periodic re-keying process, limiting the maximum amount of time and data that are protected with any one key.
+
+The following are some of the encryption algorithms and key lengths that IPsec can use:
+
+ * DES algorithm: DES was developed by IBM. DES uses a 56-bit key, ensuring high-performance encryption. 
+   DES is a symmetric key cryptosystem.
+
+ * 3DES algorithm: The 3DES algorithm is a variant of the 56-bit DES. 
+   3DES operates in a way that is similar to how DES operates, in that data is broken into 64-bit blocks. 
+   3DES then processes each block three times, each time with an independent 56-bit key. 
+   3DES provides a significant improvement in encryption strength over 56-bit DES. 3DES is a symmetric key cryptosystem.
+
+ * AES: The National Institute of Standards and Technology (NIST) has recently adopted AES to replace the aging DES-based encryption in cryptographic devices. 
+   AES provides stronger security than DES and is computationally more efficient than 3DES.
+   AES offers three different key lengths: 128-, 192-, and 256-bit keys.
+
+ * RSA: RSA is an asymmetrical key cryptosystem. It commonly uses a key length of 1024 bits or larger. 
+   IPsec does not use RSA for data encryption. IKE uses RSA encryption only during the peer authentication phase.
+
+
+ * SEAL: SEAL is a stream cipher that was developed in 1993 by Phillip Rogaway and Don Coppersmith, which uses a 160-bit key for encryption.
+
+Symmetric encryption algorithms such as AES require a common shared-secret key to perform encryption and decryption. 
+You can use email, courier, or overnight express to send the shared-secret keys to the administrators of the devices. 
+This method is obviously impractical, and does not guarantee that keys are not intercepted in transit.
+Public-key exchange methods allow shared keys to be dynamically generated between the encrypting and decrypting devices.
+
+ * The DH key agreement is a public key exchange method.
+   This method provides a way for two peers to establish a shared-secret key, which only they know, even though they are communicating over an insecure channel.
+
+ * ECDH is a variant of the DH protocol using ECC. It is part of the Suite B standards.
+ 
+These algorithms are used within IKE to establish session keys. 
+They support different prime sizes that are identified by different DH or ECDH groups.
+DH groups vary in the computational expense that is required for key agreement and the strength against cryptographic attacks.
+Larger prime sizes provide stronger security, but require more computational horsepower to execute.
+
+DH1: 768-bit
+DH2: 1024-bit
+DH5: 1536-bit
+DH14: 2048-bit
+DH15: 3072-bit
+DH16: 4096-bit
+DH19: 256-bit ECDH
+DH20: 384-bit ECDH
+DH24: 2048-bit ECDH
+
+VPN data is transported over untrusted networks such as the public Internet.
+Potentially, this data could be intercepted and read or modified.
+To guard against this, HMACs are utilized by IPsec.
+
+IPsec uses HMAC as the data integrity algorithm that verifies the integrity of the message. 
+The figure below depicts a keyed hash that is a simplification of the more complex HMAC algorithm. 
+The HMAC algorithm itself is beyond the scope of this material.
+HMAC is defined in RFC 2104. Like a keyed hash, HMAC utilizes a secret key known to the sender and the receiver.
+But HMAC also adds padding logic and XOR logic, and utilizes two hash calculations to produce the message authentication code.
+
+
+When you are conducting business long-distance, it is necessary to know who is at the other end of the phone, email, or fax.
+The same is true of VPN networks. 
+The device on the other end of the VPN tunnel must be authenticated before the communication path is considered secure.
+
+* PSKs: A secret key value is entered into each peer manually and is used to authenticate the peer. 
+  At each end, the PSK is combined with other information to form the authentication key.
+
+* RSA signatures: The exchange of digital certificates authenticates the peers.
+  The local device derives a hash and encrypts it with its private key. 
+  The encrypted hash is attached to the message and is forwarded to the remote end, and it acts like a signature.
+  At the remote end, the encrypted hash is decrypted using the public key of the local end. 
+  If the decrypted hash matches the recomputed hash, the signature is genuine.
+
+* RSA encrypted nonces: A nonce is a random number that is generated by the peer. 
+  RSA-encrypted nonces use RSA to encrypt the nonce value and other values. 
+  This method requires that each peer is aware of the public key of the other peer before negotiation starts. 
+  For this reason, public keys must be manually copied to each peer as part of the configuration process. 
+  This method is the least used of the three authentication methods.
+
+* ECDSA signatures: The ECDSA is the elliptic curve analog of the DSA signature method. 
+  ECDSA signatures are smaller than RSA signatures of similar cryptographic strength. 
+  ECDSA public keys (and certificates) are smaller than similar-strength DSA keys, resulting in improved communications efficiency. 
+  Furthermore, on many platforms, ECDSA operations can be computed more quickly than similar-strength RSA operations.
+  These advantages of signature size, bandwidth, and computational efficiency may make ECDSA an attractive choice for many IKE and IKE version 2 (IKEv2) implementations.
+
+
+
+
+
+
+ 
+ 

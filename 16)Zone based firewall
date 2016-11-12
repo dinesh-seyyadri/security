@@ -216,17 +216,334 @@ If you try to configure a section that relies on another portion of the configur
 6) Assign interfaces to zones.
 
 
+6) Configuring Zone-Based Policy Firewall Class-Maps:
 
 
+Class-maps define the traffic that the firewall selects for policy application. 
+Layer 4 class-maps sort the traffic that is based on these criteria that is listed here. 
+These criteria are specified using the match command in a class-map:
+
+ * Access-group— standard, extended, or named ACL can filter traffic that is based on source and destination IP address and source and destination port.
+ 
+ * Protocol—The Layer 4 protocols (TCP, UDP, and ICMP) and application services such as HTTP, SMTP, DNS, etc. 
+   Any well-known or user-defined service that is known to port-application mapping can be specified.
+ 
+ * Class-map—A subordinate class map that provides additional match criteria can be nested inside another class map.
+ 
+ * Not—The not criterion specifies that any traffic that does not match a specified service (protocol), access group, or subordinate class map will be selected for the class map.
+ 
+Combining Match Criteria: match-any Versus match-all:
+
+Class maps can apply match-any or match-all operators to determine how to apply the match criteria. 
+If match-any is specified, traffic must meet only one of the match criteria in the class map. 
+If match-all is specified, traffic must match all the class map’s criteria in order to belong to that particular class.
+
+Match criteria must be applied in order from more specific to less specific, if traffic meets multiple criteria. 
+For example, consider this class map:
+########
+class-map type inspect match-any my-test-cmap
+ match protocol ftp
+ match protocol tcp
+ 
+ FTP traffic must encounter the match protocol ftp command first to make sure that the traffic is handled by the service-specific capabilities of FTP inspection.
+ If the match lines are reversed, so traffic encounters the match protocol tcp statement before it compares it to match protocol ftp, the traffic is simply classified as TCP traffic, and inspected according to the capabilities of the Firewall’s TCP Inspection component.
+ This inspection is a problem for certain services such as FTP, TFTP, and several multimedia and voice signaling services such as H.323, SIP, Skinny, RTSP, and others. 
+ These services require additional inspection capabilities to recognize the more complex activities of these services.
+
+##########
+
+Applying an ACL as Match Criteria:
+
+Class maps can apply an ACL as one of the match criteria for policy application. 
+If a class map’s only match criterion is an ACL and the class-map is associated with a policy-map applying the inspect action, the router applies basic TCP or UDP inspection for all traffic that is allowed by the ACL, except that which ZFW provides application-aware inspection.
+This includes (but not limited to) FTP, SIP, Skinny (SCCP), H.323, Sun RPC, and TFTP. 
+If application-specific inspection is available and the ACL allows the primary or control channel, any secondary or media channel associated with the primary/control is allowed, regardless of whether the ACL allows the traffic.
+
+If a class-map applies only ACL 101 as the match criteria, an ACL 101 appears as follows:
+
+access-list 101 permit ip any any
+
+All traffic is allowed in the direction of the service policy that is applied to a given zone-pair, and corresponding return traffic is allowed in the opposite direction. 
+Therefore, the ACL must apply the restriction to limit traffic to specific desired types. Note that the PAM list includes application services such as HTTP, NetBIOS, H.323, and DNS.
+However, in spite of PAM’s knowledge of the specific application’s use of a given port, the firewall only applies sufficient application-specific capability to accommodate the well-known requirements of the application traffic. 
+Thus, simple application traffic such as Telnet, SSH, and other single-channel applications are inspected as TCP, and their statistics are combined together in the show command output. 
+If you need application-specific visibility into network activity, you need to configure inspection for services by application name (configure match protocol http, match protocol telnet, and so on).
+
+Compare the statistics available in the show policy-map type inspect zone-pair command output from this configuration with the more explicit firewall policy that is shown later in the topic. 
+This configuration is used to inspect traffic from a Cisco IP Phone, and several workstations that use a variety of traffic, which includes HTTP, FTP, NetBIOS, SSH, and DNS:
+
+#############
+class-map type inspect match-all all-private
+ match access-group 101
+!         
+policy-map type inspect priv-pub-pmap
+ class type inspect all-private
+  inspect
+ class class-default
+!
+zone security private
+zone security public
+zone-pair security priv-pub source private destination public
+ service-policy type inspect priv-pub-pmap
+! 
+interface FastEthernet4
+ ip address 172.16.108.44 255.255.255.0
+ zone-member security public
+!
+interface Vlan1
+ ip address 192.168.108.1 255.255.255.0
+ zone-member security private
+!
+access-list 101 permit ip 192.168.108.0 0.0.0.255 any
+
+############
+
+While this configuration is easy to define and accommodates all traffic that originates in the private zone (as long as the traffic observes the standard, recognized destination ports), it provides limited visibility into service activity, and does not offer the opportunity to apply the zone-based policy firewall’s bandwidth and session limits for specific types of traffic.
+This show policy-map type inspect zone-pair priv-pub command output is the result of the previous simple configuration that uses only a permit ip [subnet] any ACL between zone-pairs.
+As you can see, most workstation traffic is counted in the basic TCP or UDP statistics:
 
 
+##########
+
+stg-871-L#show policy-map type insp zone-pair priv-pub
+ Zone-pair: priv-pub
+ 
+  Service-policy inspect : priv-pub-pmap
+ 
+    Class-map: all-private (match-all)
+      Match: access-group 101
+      Inspect
+        Packet inspection statistics [process switch:fast switch]
+        tcp packets: [413:51589]
+        udp packets: [74:28]
+        icmp packets: [0:8]
+        ftp packets: [23:0]
+        tftp packets: [3:0]
+        tftp-data packets: [6:28]
+        skinny packets: [238:0]
+ 
+        Session creations since subsystem startup or last reset 39
+        Current session counts (estab/half-open/terminating) [3:0:0]
+        Maxever session counts (estab/half-open/terminating) [3:4:1]
+        Last session created 00:00:20
+        Last statistic reset never
+        Last session creation rate 2
+        Maxever session creation rate 7
+        Last half-open session total 0
+ 
+    Class-map: class-default (match-any)
+      Match: any 
+      Drop (default action)
+        0 packets, 0 bytes
+        
+###########
 
 
+By contrast, a similar configuration that adds application-specific classes provides more granular application statistics and control, and still accommodates the same breadth of services that was shown in the first example by defining the last-chance class map matching only the ACL as the last chance in the policy map:
+
+######
+
+class-map type inspect match-all all-private
+ match access-group 101
+class-map type inspect match-all private-ftp
+ match protocol ftp
+ match access-group 101
+class-map type inspect match-any netbios
+ match protocol msrpc
+ match protocol netbios-dgm
+ match protocol netbios-ns
+ match protocol netbios-ssn
+class-map type inspect match-all private-netbios
+ match class-map netbios
+ match access-group 101
+class-map type inspect match-all private-ssh
+ match protocol ssh
+ match access-group 101
+class-map type inspect match-all private-http
+ match protocol http
+ match access-group 101
+!
+policy-map type inspect priv-pub-pmap
+ class type inspect private-http
+  inspect
+ class type inspect private-ftp
+  inspect
+ class type inspect private-ssh
+  inspect
+ class type inspect private-netbios
+  inspect
+ class type inspect all-private
+  inspect
+ class class-default!
+zone security private
+zone security public
+zone-pair security priv-pub source private destination public
+ service-policy type inspect priv-pub-pmap
+! 
+interface FastEthernet4
+ ip address 172.16.108.44 255.255.255.0
+ zone-member security public
+!
+interface Vlan1
+ ip address 192.168.108.1 255.255.255.0
+ zone-member security private
+!
+access-list 101 permit ip 192.168.108.0 0.0.0.255 any
+
+######
 
 
+The more-specific configuration provides this substantial granular output for the show policy-map type inspect zone-pair priv-pub command:
+
+stg-871-L#show policy-map type insp zone-pair priv-pub
+ Zone-pair: priv-pub
+
+   Service-policy inspect : priv-pub-pmap
+
+     Class-map: private-http (match-all)
+       Match: protocol http
+       Match: access-group 101
+       Inspect
+         Packet inspection statistics [process switch:fast switch]
+         tcp packets: [0:2193]
+
+         Session creations since subsystem startup or last reset 731
+         Current session counts (estab/half-open/terminating) [0:0:0]
+         Maxever session counts (estab/half-open/terminating) [0:3:0]
+         Last session created 00:29:25
+         Last statistic reset never
+         Last session creation rate 0
+         Maxever session creation rate 4
+         Last half-open session total 0
+
+     Class-map: private-ftp (match-all)
+       Match: protocol ftp
+       Inspect
+         Packet inspection statistics [process switch:fast switch]
+         tcp packets: [86:167400]
+         ftp packets: [43:0]
+
+         Session creations since subsystem startup or last reset 7
+         Current session counts (estab/half-open/terminating) [0:0:0]
+         Maxever session counts (estab/half-open/terminating) [2:1:1]
+         Last session created 00:42:49
+         Last statistic reset never
+         Last session creation rate 0
+         Maxever session creation rate 4
+         Last half-open session total 0
+
+     Class-map: private-ssh (match-all)
+       Match: protocol ssh
+       Inspect
+         Packet inspection statistics [process switch:fast switch]
+         tcp packets: [0:62]
+
+         Session creations since subsystem startup or last reset 4
+         Current session counts (estab/half-open/terminating) [0:0:0]
+         Maxever session counts (estab/half-open/terminating) [1:1:1]
+         Last session created 00:34:18
+         Last statistic reset never
+         Last session creation rate 0
+         Maxever session creation rate 2
+         Last half-open session total 0
+
+     Class-map: private-netbios (match-all)
+       Match: access-group 101
+       Match: class-map match-any netbios
+         Match: protocol msrpc
+           0 packets, 0 bytes
+           30 second rate 0 bps
+         Match: protocol netbios-dgm
+           0 packets, 0 bytes
+           30 second rate 0 bps
+         Match: protocol netbios-ns
+           0 packets, 0 bytes
+           30 second rate 0 bps
+         Match: protocol netbios-ssn
+           2 packets, 56 bytes
+           30 second rate 0 bps
+       Inspect
+         Packet inspection statistics [process switch:fast switch]
+         tcp packets: [0:236]
+ 
+         Session creations since subsystem startup or last reset 2
+         Current session counts (estab/half-open/terminating) [0:0:0]
+         Maxever session counts (estab/half-open/terminating) [1:1:1]
+         Last session created 00:31:32
+         Last statistic reset never
+         Last session creation rate 0
+         Maxever session creation rate 1
+         Last half-open session total 0
+
+     Class-map: all-private (match-all)
+       Match: access-group 101
+       Inspect
+         Packet inspection statistics [process switch:fast switch]
+         tcp packets: [51725:158156]
+         udp packets: [8800:70]
+         tftp packets: [8:0]
+         tftp-data packets: [15:70]
+         skinny packets: [33791:0]
+
+         Session creations since subsystem startup or last reset 2759
+         Current session counts (estab/half-open/terminating) [2:0:0]
+         Maxever session counts (estab/half-open/terminating) [2:6:1]
+         Last session created 00:22:21
+         Last statistic reset never
+         Last session creation rate 0
+         Maxever session creation rate 12
+         Last half-open session total 0
+ 
+     Class-map: class-default (match-any)
+       Match: any 
+       Drop (default action)
+         4 packets, 112 bytes
+         
+         
+###############
 
 
+Another added benefit of using a more granular class map and policy map configuration, as mentioned earlier, is the possibility of applying class-specific limits on session and rate values and specifically adjusting inspection parameters by applying a parameter map to adjust each class’s inspection behavior.
 
+
+7) Configuring Zone-Based Policy Firewall Policy-Maps:
+
+The policy map applies firewall policy actions to one or more class-maps to define the service-policy that will be applied to a security zone-pair.
+When an inspect-type policy-map is created, a default class which is named class class-default is applied at the end of the class. 
+The class class-default’s default policy action is drop, but can be changed to pass.
+The log option can be added with the drop action. Inspect cannot be applied on class class-default.
+
+Zone-Based Policy Firewall Actions
+
+Zone-Based Policy Firewall provides three actions for traffic that traverses from one zone to another:
+
+* Drop—This is the default action for all traffic, as applied by the "class class-default" that terminates every inspect-type policy-map. 
+  Other class maps within a policy map can also be configured to drop unwanted traffic. 
+  Traffic that is handled by the drop action is silently dropped (i.e., no notification of the drop is sent to the relevant end host) by the zone-based policy firewall, as opposed to the ACL behavior of sending an ICMP “host unreachable” message to the host that sent the denied traffic. 
+  Currently, there is not an option to change the silent drop behavior. 
+  The log option can be added with drop for syslog notification that traffic was dropped by the firewall.
+  
+* Pass—This action allows the router to forward traffic from one zone to another. 
+  The pass action does not track the state of connections or sessions within the traffic.
+  Pass only allows the traffic in one direction. 
+  A corresponding policy must be applied to allow return traffic to pass in the opposite direction. 
+  The pass action is useful for protocols such as IPSec ESP, IPSec AH, ISAKMP, and other inherently secure protocols with predictable behavior.
+  However, most application traffic is better handled in the zone-based policy firewall with the inspect action.
+* Inspect—The inspect action offers state-based traffic control. 
+  For example, if traffic from the private zone to the Internet zone in the earlier example network is inspected, the router maintains connection or session information for TCP and UDP traffic.
+  Therefore, the router permits return traffic that is sent from Internet-zone hosts in reply to private-zone connection requests.
+  Also, inspect can provide application inspection and control for certain service protocols that might carry vulnerable or sensitive application traffic. Audit-trail can be applied with a parameter-map to record connection/session start, stop, duration, the data volume that is transferred, and source and destination addresses.
+
+Actions are associated with class maps in policy maps:
+
+######
+
+conf t
+ policy-map type inspect z1-z2-pmap
+  class type inspect service-cmap
+   inspect|drop|allow [service-parameter-map]
+   
+#######
 
 
 

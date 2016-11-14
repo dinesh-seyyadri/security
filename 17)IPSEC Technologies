@@ -177,8 +177,193 @@ The device on the other end of the VPN tunnel must be authenticated before the c
 
 
 
+3)  IPsec Framework
 
-
+IPsec is a framework of open standards that spells out the rules for secure communications. 
+IPsec relies on existing algorithms to implement encryption, authentication, and key exchange. 
+The figure below illustrates some of the standard algorithms that IPsec uses. 
+The framework allows technologies to be replaced over time. 
+When cryptographic technologies become obsolete, it does not make the IPsec framework obsolete. 
+Current technologies are swapped to replace the obsolete technologies, keeping the framework in place. 
+For example, AES is now commonly implemented for confidentiality in place of the aging DES and 3DES technologies. 
+Similarly, SHA-2 based algorithms are used for data integrity, in place of the aging MD5 and SHA-1 based algorithms.
 
  
  
+4)  Internet Key Exchange:
+
+IPsec implements a VPN solution using an encryption process that involves the periodic changing of encryption keys.
+IPsec uses the IKE protocol to authenticate a peer computer and to generate encryption keys. 
+IKE negotiates an SA, which is an agreement between two peers engaging in an IPsec exchange, and the SA consists of all the required parameters that are necessary to establish successful communication.
+
+IPsec uses the IKE protocol to provide these functions:
+* Negotiation of SA characteristics
+* Automatic key generation
+* Automatic key refresh
+* Manageable manual configuration
+
+There are two versions of the IKE protocol: IKE version 1 (IKEv1) and IKE version 2 (IKEv2). 
+
+IKEv2 was created to overcome some of the limitations of IKEv1. IKEv2 provides the following enhancements:
+It provides simplicity and increases speed, by requiring fewer transactions to establish security associations. A simplified initial exchange of messages reduces latency and increases connection establishment speed.
+It incorporates many extensions that supplement the original IKE protocol. Examples include NAT traversal, dead peer detection, and initial contact support.
+It provides stronger security through DoS protection and other functions.
+It provides reliability by using sequence numbers, acknowledgments, and error correction.
+It provides flexibility, through support for EAP as a method for authenticating VPN endpoints.
+It provides mobility, by using the IKEv2 Mobility and Multihoming Protocol (MOBIKE) extension. This enhancement allows mobile users to roam and change IP addresses without disconnecting their IPsec session.
+
+5)  IKE Phase 1:
+
+The basic purpose of IKE Phase 1 is to negotiate IKE policy sets, authenticate peers, and set up a secure channel between the peers. 
+IKEv1 Phase 1 occurs in one of two modes: main mode and aggressive mode.
+
+Main mode has three two-way exchanges between the initiator and receiver. 
+These exchanges define which encryption and authentication protocols are acceptable, how long keys should remain active, and whether PFS should be enforced.
+
+Main mode includes three exchanges:
+
+First exchange: Peers negotiate and agree upon the algorithms and hashes that will be used as a basic security policy to secure the subsequent IKE communications. 
+The initiator sends a list of policy proposals to the responder.
+The responder selects a policy from the list, and replies back to the initiator, indicating which of the policies it selected.
+
+Second exchange: Diffie Hellman key agreement is implemented with the second two-way exchange. 
+The peers generate their public and private nonces, and send their public nonce unprotected to their peer. 
+Each uses their own private nonce along with their peers public nonce to calculate the agreed upon key material. 
+That exchange is the last clear text exchange. All further negotiation is encrypted within the IKE SA.
+
+Third exchange: At this point, shared key material for privacy and data integrity is available on both peers. 
+The security association is built, but the peers have not yet authenticated each other. 
+The third exchange is protected by the SA. If authentication succeeds, the SA is available for subsequent exchanges between the peers.
+If authentication fails, the SA is terminated.
+
+Aggressive mode:
+
+Aggressive mode, on the other hand, compresses the IKE SA negotiation phases, which consist of two exchanges and three messages.
+In aggressive mode, the initiator passes all data that is required for the SA. 
+The responder sends the proposal, key material, and ID, and authenticates the session in the next packet.
+The initiator replies by authenticating the session. Negotiation is quicker, and the initiator and responder IDs pass in plaintext.
+
+
+The use of main mode or aggressive mode is a tradeoff between performance and security. 
+Main mode requires more messages but does not expose the identity of the peers. 
+This identity is protected by the negotiated policies and keys that are negotiated in the first two exchanges.
+Aggressive mode requires fewer messages and therefore is more efficient. 
+However, peer identities are exposed before negotiating a secure channel, so it assumes a trusted transport and a more protected environment outside of IPsec. 
+The choice of mode is a configurable option in most IPsec implementations.
+
+The first step in IKEv1 main mode is to negotiate the security policy that will be used for the ISAKMP SA. 
+There are five parameters, which require agreement from both sides:
+
+a) Encryption algorithm
+b) Hash algorithm
+c) Diffie-Hellman group number
+d) Peer authentication method
+e) SA lifetime
+
+The figure illustrates the security proposal negotiation in IKEv1 main mode. 
+An IKE proposal specifies a value for each of these five parameters.
+In the simplest environments, peers may be configured with just a single IKE proposal to which they both agree.
+But, in more complex environments where there are multiple IPsec peers that have different security requirements, multiple IKE proposals must be configured.
+
+The first exchange begins with the initiator packaging up its IKE proposals and sending them all to the responder.
+The responder compares the IKE proposals that it is willing to accept with the proposals that it received. 
+If there is not a match, negotiation fails. If there is a match, the responder will reply with the proposal that it accepted.
+
+The second exchange in IKEv1 main mode negotiations facilitates Diffie-Hellman key agreement.
+The Diffie-Hellman method allows two parties to share information over an untrusted network and mutually compute an identical shared secret that cannot be computed by eavesdroppers who intercept the shared information.
+
+The mathematical operations are relatively easy to describe, expensive to compute, and intractable to reverse. 
+The next figure shows the mathematical operations. Each Diffie-Hellman group specifies the values of p, a very larger prime number, and g, a primitive root modulo p. 
+Both parties generate their private integers and perform the specified calculations to produce their public integers. 
+They then perform another calculation that is based on their private integer and the public integer that they received from their peer to produce the shared key material.
+Both parties compute the same shared key material. An attacker who intercepts the public values will find the problem of reverse computation to be intractable, with sufficiently large values of p.
+
+Diffie-Hellman groups supported by Cisco IOS Software and the associated size of the value of the prime p:
+
+DH Group 1: 768 bits
+DH Group 2: 1024 bits
+DH Group 5: 1536 bits
+DH Group 14: 2048 bits
+DH Group 15: 3072 bits
+DH Group 16: 4096 bits
+
+A Diffie-Hellman key agreement can also be based on elliptic curve cryptography. 
+Its use is included in the Suite B cryptographic suites.
+Diffie-Hellman groups 19, 20, and 24, based on elliptic curve cryptography, are also supported by Cisco IOS Software.
+
+After the DH key exchange is complete, shared cryptographic keys are provisioned, but the peer is not yet authenticated. 
+The device on the other end of the VPN tunnel must be authenticated before the communications path is considered secure. 
+The last exchange of IKE Phase 1 authenticates the remote peer.
+
+There are three data origin authentication methods:
+
+* PSKs: A PSK is a secret key value that is entered into each peer manually and is used to authenticate the peer. 
+  It is important to understand that the preshared key is not used for encryption. It is more like a password.
+  
+* RSA signatures: Authentication by RSA signatures uses the exchange of digital certificates to authenticate the peers.
+  The certificate signatures are validated, verifying that the certificates have been signed by a trusted CA and the data in them is valid. 
+  The peer certificate contains the peer’s public key. Only the authentic peer should have the private key that is associated with the public key in their certificate.
+  
+* RSA-encrypted nonce: An RSA encrypted nonce works in a similar way as an RSA signature, but does not utilize a certificate and PKI.
+  It requires the manual entry of the peer public key in the router configuration. 
+  This method is more secure than preshared keys, but it is more difficult to configure, and is less scalable than RSA signatures.
+
+
+If the peer authentication fails, the ISAKMP SA is terminated. 
+If the peer authentication succeeds, the ISAKMP SA provides a secure tunnel in which to negotiate Phase 2 IPsec SAs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

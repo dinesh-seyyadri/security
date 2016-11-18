@@ -559,8 +559,47 @@ Key exchange, either pre-shared or dynamic, using the ECDH method
 The NSA has stated that these four algorithms in combination provide adequate information assurance for classified information. 
 NSA Suite B cryptography for IPsec has been published as standard in RFC 4869, and it has gained acceptance in the industry.
 
+11) IKE Version 2:
+
+IKEv2, a next-generation key management protocol that is based on RFC 4306, is an enhancement of the IKE protocol.
+
+IKE Version 2 is a next-generation key management protocol.
+It combines all related specifications into RFC 4306. 
+This improves simplicity and interoperability.
+Protocol extensions that are included with IKE V2 include Dead Peer Detection, NAT Traversal, and initial contact.
+IKE V2 has less overhead, which reduces latency and has a reduced SA delay, which remains consistent, even as packet size increases.
+
+IKE V2 has faster rekey time. 
+This improves performance and reduces packet loss. 
+IKE V2 has better mitigation against denial of service attack. Using a cookie-based mechanism, the responder uses minimal CPU and commits no state to the SA, until it can completely validate the initiator. 
+IKE V2 supports EAP, which allows peers to use different authentication mechanisms. 
+For example, a VPN client may authenticate the VPN server using digital certificates, while the server authenticates the client via a pre-shared key. So this adds flexibility.
+IKE V2 creates an SA without the use of phases. Peers start with an IKE_SA_INIT exchange, in which the peers establish a secure channel.
+After this, all further communications are encrypted. Next, peers authenticate each other with an IKE_AUTH exchange. 
+When IKE_AUTH completes, both peers have an IPsec SA to protect the tunnel traffic.
+Each line in the crypto ACL specifies a single IPsec proxy. 
+If there is more than one line in the crypto ACL, CREATE_CHILD_SA exchanges are used to negotiate additional IPsec SA's.
+
+12) IPsec with IPv6:
 
 
+
+IPsec support is mandatory for IPv6. Of course, it is your choice whether to use it or not.
+IPsec is also native to IPv6 and defines new protocol headers that add authentication and confidentiality to IPv6 packets. 
+This makes it easy for various devices to form peer-to-peer IPsec tunnels.
+
+Like IPv4, IPv6 can leverage ESP and AH. In IPv4, AH and ESP were separate IP protocol headers. 
+But IPv6 uses the extension header approach. ESP uses the Next Header value of 50 and AH uses the Next Header value of 51. 
+IPv6 leverages the latest cryptography suites, such as Suite B and IKEv2.
+
+Several options are available for transitioning to IPv6. 
+Some of these options involve tunneling IPv6 in IPv4. 
+When an IPv6 packet arrives at the edge router, it encapsulates the packet with a new IPv4 header.
+This allows the transport of IPv6 traffic over an IPv4 cloud, but no security.
+
+So, you can leverage IPv4 IPsec to provide VPN services to IPv6, typically using the ESP in tunnel mode. 
+This means the entire IPv6-over-v4 packet is re-encapsulated into a new IPv4 header, with ESP header and trailers added.
+When edge router B receives this, it strips all the encapsulation and forwards a native IPv6 packet toward the intended destination.
 
 
 

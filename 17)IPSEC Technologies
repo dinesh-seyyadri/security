@@ -526,15 +526,38 @@ interface gigabitethernet 0/0
   
 #######
 
+10) Suite B Cryptographic Standard:
 
+In most cryptographic functions, key length is an important security parameter. 
+Both academic and private organizations provide recommendations and mathematical formulas to approximate the minimum key size requirement for security. 
+Despite the availability of these publications, choosing an appropriate key size to protect systems and networks from attacks remains a challenge.
 
+As computing power increases, the feasibility of commercially deploying complex encryption algorithms also increases. 
+The main principle is that the degree of security depends on the length of the key of the encryption algorithm.
+The time that it takes to process all the possibilities is a function of the computing power of the computer.
+Therefore, the shorter the key, the easier it is to break the key.
 
+In 2005, the NSA identified a set of cryptographic algorithms. 
+Those algorithms, when used together, are the preferred method for ensuring the security and integrity of information that is passed over public networks such as the Internet. 
+The NSA called the set of algorithms “Suite B.” Today, Suite B is globally recognized as an advanced, publicly available standard for cryptography. 
+Suite B provides a security level of 128 bits or higher, significantly higher than many commonly used standards.
 
+Integrated into IETF standards, Suite B algorithms make it easier to collaborate in environments where costs or logistics traditionally hindered information sharing. 
+Secure sharing of information over the Internet and other nontrusted networks supports various missions at all levels of government.
+Examples include intelligence agencies and the military in a government context, or private sector companies that are required to increase the security of transmitting sensitive content, such as intellectual property or private customer and employee information.
 
+Another advantage of Suite B is that it helps public and private sector organizations meet compliance requirements. 
+These requirements include compliance with PCI DSS, HIPAA, FIPS 140, and others.
 
+As described in RFC 4869, Suite B cryptography secures information that is traveling over networks, using four well-established, public domain cryptographic algorithms:
 
+Encryption that is based on AES using 128- or 256-bit keys
+Hashing (digital fingerprinting) based on the SHA-2
+Digital signatures with the ECDSA using curves with 256- and 384-bit prime moduli
+Key exchange, either pre-shared or dynamic, using the ECDH method
 
-
+The NSA has stated that these four algorithms in combination provide adequate information assurance for classified information. 
+NSA Suite B cryptography for IPsec has been published as standard in RFC 4869, and it has gained acceptance in the industry.
 
 
 

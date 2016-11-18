@@ -312,38 +312,219 @@ There are three data origin authentication methods:
 If the peer authentication fails, the ISAKMP SA is terminated. 
 If the peer authentication succeeds, the ISAKMP SA provides a secure tunnel in which to negotiate Phase 2 IPsec SAs.
 
+SA : security association. Instance of security policy and keying material applied to a data flow.
+IKE
+
+Internet Key Exchange. IKE establishes a shared security policy and authenticates keys for services (such as IPsec) that require keys. 
+Before any IPsec traffic can be passed, each router, firewall, or host must verify the identity of its peer. 
+Verification can be done by manually entering pre-shared keys into both hosts or by a CA service.
+
+
+6)  Sample ISAKMP Configuration:
+
+The command crypto isakmp policy priority, in global configuration mode, is used to enter ISAKMP configuration mode to specify the IKE proposal that is associated with the specified priority value. 
+The priority is a locally significant value. The lower the priority, the more the local device prefers the proposal.
+
+The command crypto isakmp policy priority, in global configuration mode, is used to enter ISAKMP configuration mode to specify the IKE proposal that is associated with the specified priority value. 
+The priority is a locally significant value. The lower the priority, the more the local device prefers the proposal.
+
+There are five parameters available for configuration:
+
+a) Hash: The hash algorithm that is used for HMAC operations
+b) Authentication: The method of validating the peer identity
+c) Group: The Diffie-Hellman group number
+d) Lifetime: The maximum number of seconds before the SA expires. SA expiration will force rekeying for continued communication.
+e) Encryption: The encryption algorithm that is used to insure privacy
+
+NOTE:
+The five parameters can spell the acronym HAGLE. 
+Since haggling is a form of negotiation, and the selection of ISAKMP policy is negotiated between IPsec peers, this acronym can be used as a memory aid.
+
+
+The following is an example ISAKMP configuration:
+#############
+
+crypto isakmp policy 100
+ encr aes
+ hash sha256
+ authentication pre-share
+ group 5
+ lifetime 43200
+crypto isakmp policy 200
+ encr 3des
+ authentication pre-share
+ group 2
+
+##########
+
+There are default values for each of the five parameters. 
+If the default value is specified during the configuration process, it will not appear in the running configuration. 
+If no value is specified during the configuration process, the default value will be used.
+To verify the IKE proposals that are configured on a Cisco IOS device, use the show crypto isakmp policy command.
+
+##########
+
+Rtr-1#show crypto isakmp policy
+Global IKE policy
+Protection suite of priority 100
+        encryption algorithm:   AES - Advanced Encryption Standard (128 bit keys).
+        hash algorithm:         Secure Hash Standard 2 (256 bit)
+        authentication method:  Pre-Shared Key
+        Diffie-Hellman group:   #5 (1536 bit)
+        lifetime:               43200 seconds, no volume limit
+Protection suite of priority 200
+        encryption algorithm:   Three key triple DES
+        hash algorithm:         Secure Hash Standard
+        authentication method:  Pre-Shared Key
+        Diffie-Hellman group:   #2 (1024 bit)
+        lifetime:               86400 seconds, no volume limit
+        
+############
+
+7)  IPsec Protocols:
+
+IPsec is a framework of open standards. IPsec spells out the messaging to secure the communication but relies on existing algorithms. 
+There are two main IPsec framework protocols: AH and ESP.
+
+
+AH, which is IP protocol 51, is the appropriate protocol to use when confidentiality is not required or permitted. AH does not provide data confidentiality (encryption). 
+All text is transported unencrypted. If the AH protocol is used alone, it provides weak protection. 
+AH does, however, provide origin authentication, data integrity, and anti-replay protection for IP packets that are passed between two systems.
+
+AH achieves data integrity and origin authentication by applying a keyed one-way hash function to the packet. 
+The following steps describe the process, which is illustrated in the figure:
+
+a) The immutable fields of the IP header, the data payload, and a shared secret key that is used between the two systems are sent through a hash algorithm.
+
+b) The hash algorithm creates a hash-based message authentication code. 
+   It builds a new AH header that contains the HMAC and prepends the header to the original packet.
+
+c) The new packet is transmitted to the IPsec peer router.
+
+d) The peer router performs the same one-way hash function on the received packet and compares the result to the value of the hash that the sender has supplied. 
+   The hashes must match exactly. Even if one bit is changed in the transmitted packet, the hash output on the received packet changes, and the AH header will not match.
+   This process enables the receiver to detect changes that occur in any part of the packet during transit. 
+   The fact that the one-way hash also involves the use of a shared-secret key between the two systems means that origin authentication is also assured.
+
+AH supports the HMAC-MD5 and HMAC-SHA-1 algorithms. In modern IPsec VPN implementations, AH is not commonly used.
+
+
+Like AH, ESP provides origin authentication, data integrity, and anti-replay protection; however, unlike AH, it also provides confidentiality. 
+ESP, which is IP protocol 50, provides confidentiality by encrypting IP packets. 
+IP packet encryption conceals the data payload and the identities of the ultimate source and destination. 
+ESP supports various symmetric encryption algorithms, including DES, 3DES, and AES. 
+The original data is well protected by ESP, because the entire original IP packet is encrypted. 
+As illustrated in the figure, an ESP header and trailer are added to the encrypted payload. 
+When ESP authentication is also used, the encrypted IP packet and the ESP header and trailer are included in the hashing process.
+
+When both authentication and encryption are used, encryption is performed first.
+Authentication is then performed by sending the encrypted payload through a hash algorithm. 
+The hash provides data integrity and data origin authentication.
+Finally, a new IP header is prepended to the authenticated payload.
+The new IP address is used to route the packet. ESP does not attempt to provide data integrity for this new external IP header.
+
+######
+Note:
+
+AH does provide data integrity for the external IP header. Due to this, AH is not compatible with NAT performed in the transmission path.
+NAT changes the IP addresses in the IP header, causing AH data integrity checks to fail.
+
+#####
+
+Performing encryption before authentication facilitates rapid detection and rejection of replayed or bogus packets by the receiving device.
+Before decrypting the packet, the receiver can authenticate inbound packets. 
+By doing this authentication, it can quickly detect problems and potentially reduce the impact of DoS attacks. 
+ESP can, optionally, enforce antireplay protection by requiring that a receiving host sets the replay bit in the header to indicate that the packet has been seen.
+
+In modern IPsec VPN implementations, the use of ESP is common. Although both encryption and authentication are optional in ESP, one of them must be used.
+
+ESP can operate in either tunnel mode or transport mode, as shown in the figure.
+
+ESP Tunnel mode:
+
+ESP tunnel mode protects the entire original IP packet, which is encrypted, including its IP header, and becomes the payload for the new packet.
+An ESP header is applied for the transport layer header, and this is encapsulated in a new packet with a new IP header.
+The new IP header specifies the VPN peers as the source and destination IP addresses. The IP addresses specified in the original IP packet are not visible.
+
+ESP transport mode:
+
+ESP transport mode does not protect the original packet IP header. Only the original packet payload is protected. 
+An ESP header is inserted between the original IP header and the protected payload. 
+Transport mode can be negotiated directly between two IP hosts.
+ESP transport mode can be used for site-to-site VPN if another technology, such as GRE tunneling, is used to provide the outer IP header.
+
+
+AH can also be implemented in either tunnel mode or transport mode. 
+The key distinction between tunnel mode and transport mode is what is done with the original IP header.
+Tunnel mode provides a new IP header. Transport mode maintains the original IP header.
+
+
+8)  IKE Phase 2:
+
+The purpose of IKE phase 2 is to negotiate the IPsec security parameters that define the IPsec SA, which protects the network data traversing the VPN. IKE phase 2 performs the following functions:
+
+-Negotiates IPsec security parameters, which are known as IPsec transform sets
+-Establishes IPsec SAs
+-Periodically renegotiates IPsec SAs to ensure security
+-Optionally, performs an additional DH exchange
+
+IKE phase 1 offered two modes, main mode and aggressive mode, to negotiate the ISAKMP SA. 
+IKE phase 2 only offers one mode, called quick mode, to negotiate the IPsec SAs. 
+In phase 2, IKE negotiates the IPsec transform set and the shared keying material that is used by the transforms.
+Among the negotiated parameters is the lifetime of the IPsec SA. 
+When an IPsec SA expires, a replacement SA with new keying material is negotiated. 
+The new keying material can be based off the original Diffie-Hellman agreements that are performed during the phase 1 negotiation.
+Optionally, phase 2 can include its own Diffie-Hellman key exchange, using a feature called perfect forward secrecy.
+
+It is important to note that the ISAKMP SA provides a bidirectional tunnel that is used to negotiate the IPsec SAs. 
+The IPsec SAs, however, are unidirectional. Most commonly, there are two IPsec SAs.
+Depending on the configuration, it is possible for multiple pairs of IPsec SAs to be negotiated between the IPsec peers.
 
 
 
+9)  IPsec Configuration:
+
+IPsec provides secure tunnels between two peers, such as two routers.
+You can define which packets are considered sensitive and should be sent through these secure tunnels, and you define the parameters that should be used to protect these sensitive packets, by specifying characteristics of these tunnels. 
+Then, when the IPsec peer sees such a sensitive packet, it sets up the appropriate secure tunnel and sends the packet through the tunnel to the remote peer.
+
+In the figure, for Router A and Router B to peer and use IPsec to protect traffic between host A and Host B, three things must be explicitly defined in a construct that is called a crypto map:
 
 
+a) Which data to protect? The routers will not protect all data. 
+   Consider a VPN-capable router that connects a site to the Internet. 
+   Much of the traffic traversing that router is associated with public Internet-based services.
+   The router does not perform IPsec transformations on that data. Only specific data will be protected.
 
+b) How to protect that data? Note the term “protect” rather than “encrypt.” 
+   Encryption provides privacy, but that is only one aspect of IPsec protection. 
+   IPsec also provides data integrity by the use of cryptographic hash-based message authentication. 
+   IPsec also provides origin authentication by securely authenticating the peer system and sharing unique keys with that peer. 
+   There are several algorithms available for these purposes. The particular desired algorithms must be specified.
 
+c) Where to send the protected data? IPsec protects the entire original packet, including the IP header. 
+   To facilitate forwarding via IP, a new IP header must be provided, specifying the configured peer’s IP address as the destination IP address.
 
+For IPsec to succeed between two IPsec peers, the crypto maps on both peers must contain compatible configuration statements. 
+The following is an example crypto map configuration.
 
+######
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+crypto map VPNMAP 10 ipsec-isakmp 
+ description Tunnel to Peer 1
+ set peer 198.51.100.10
+ set transform-set ESP-AES-SHA 
+ match address Local-to-Peer1
+ 
+extended IP access list Local-to-Peer1
+    10 permit ip 10.10.0.0 0.0.255.255 172.16.111.0 0.0.0.255
+ 
+crypto ipsec transform-set ESP-AES-SHA esp-aes esp-sha-hmac 
+ mode tunnel
+interface gigabitethernet 0/0
+  crypto map VPNMAP
+  
+#######
 
 
 

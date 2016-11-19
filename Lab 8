@@ -1,0 +1,723 @@
+1)
+
+Access the console of Site3-Rtr and display the crypto map that is configured.
+
+Site3-Rtr>enable
+Site3-Rtr#sh run | section crypto map
+crypto map VPNMAP 10 ipsec-isakmp 
+ description Tunnel to Site 4
+ set peer 192.168.4.2
+ set transform-set ESP-AES-SHA 
+ match address Site3-to-Site4
+crypto map VPNMAP 20 ipsec-isakmp 
+ description Tunnel to Site 2
+ set peer 192.168.2.2
+ set transform-set ESP-AES-SHA 
+ match address Site3-to-Site1
+crypto map VPNMAP 30 ipsec-isakmp 
+ description Tunnel to Site 1
+ set peer 192.168.1.2
+ set transform-set ESP-AES-SHA 
+ match address Site3-to-Site1
+ crypto map VPNMAP
+ 
+ ###
+ 
+ Note the following:
+ 
+ There is one crypto map defined. It is named VPNMAP and it has three entries (10, 20, and 30). 
+ Based on the descriptions, you can guess that there is an entry in the crypto map for each of the other three sites.
+ Kayla has fully configured Site3-Rtr and Site4-Rtr. In later discoveries, you will configure Site2-Rtr and Site1-ASA to complete site-to-site tunnels to Site 3.
+ The last line in the output (crypto map VPNMAP) appears to be under the crypto map VPNMAP 30 configuration, but, actually, it is not under that configuration. 
+ It is under the configuration of interface Gi0/2. This command assigns this crypto map to that interface.
+ 
+ 2)
+ VPNMAP entry 10 defines the characteristics of the tunnel to Site 4.
+ While the commands appear in a different order in the configuration, logically, the first consideration is what needs to be protected.
+ This is done with the match address command. This command references an ACL. 
+ Traffic that is permitted by the ACL is what should be protected in this particular tunnel. 
+ Matched traffic is often referred to as “interesting” traffic.VPN entry 10 specifies match address Site3-to-Site4. 
+ Display the referenced ACL.
+ 
+ ####
+ 
+ Site3-Rtr#show access-list Site3-to-Site4
+ Extended IP access list Site3-to-Site4
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.4.0 0.0.0.255
+    
+    All IP traffic sourced from 10.10.3.0/24 and destined to 10.10.4.0/24 matches the ACL. 
+    Matching traffic is interesting and will be protected by IPsec.
+
+####
+ 
+3)
+The second consideration is how to protect the interesting traffic. 
+The set transform-set command that is specified in the crypto map entry defines how to protect interesting traffic.
+Like the match address command, set transform-set references a construct that is defined elsewhere in the configuration.
+Display the IPsec transform sets that are defined in the Site3-Rtr configuration.
+
+##
+
+Site3-Rtr#show run | section crypto ipsec
+crypto ipsec transform-set ESP-AES-SHA esp-aes esp-sha-hmac 
+ mode tunnel
+ 
+##
+Note the following:
+
+The transform-set name is ESP-AES-SHA. The transform set is referenced in the crypto map by this name. 
+It is common to use a name that describes the transform set settings but it is not necessary.
+
+The two arguments, esp-aes and esp-sha-hmac, actually define the crypto technologies that are used.
+Encapsulating Security Payload (ESP) is the protocol that is commonly used by IPsec. 
+You can specify one ESP encryption algorithm and one ESP hash-based message authentication algorithm.
+
+There is another protocol that can be used by IPsec called Authentication Header (AH).
+It can be used alone, or in combination with ESP. You can specify an AH authentication algorithm.
+AH cannot provide privacy. It is not commonly used in networks today.
+
+The default mode is tunnel mode. The alternative is transport mode.
+Transport mode maintains the original IP header and only protects the data that is contained in the original IP packet. 
+Transport mode can be used to protect traffic between the router itself and another specific device.
+When protecting packets sent between systems other than the router, tunnel mode is appropriate, unless another tunneling protocol, such as Generic Router Encapsulation, is used to provide a new IP header. 
+
+
+4)
+
+The third consideration is where to send the protected packet. 
+This is configured with the set peer statement in a crypto map entry.
+As you have seen, VPNMAP entry number 10 specifies 192.168.4.2 as the peer. 
+The Site4-Rtr is the peer for this crypto map entry.
+
+5)
+
+There are other factors that can be configured for an IPsec tunnel, but they all have default values.
+What to protect, how to protect, and where to send the protected traffic are all dependent on the scenario and there cannot be default values. 
+As long as the default values for the other parameters are left in place between the two peers, an IPsec tunnel can be negotiated. 
+You will look deeper into this later in the discovery. 
+For now, display all the settings of the crypto map, including the default settings, with the command show crypto map.
+
+Site3-Rtr#show crypto map
+Crypto Map IPv4 "VPNMAP" 10 ipsec-isakmp
+        Description: Tunnel to Site 4
+        Peer = 192.168.4.2
+        Extended IP access list Site3-to-Site4
+            access-list Site3-to-Site4 permit ip 10.10.3.0 0.0.0.255 10.10.4.0 0.0.0.255
+        Current peer: 192.168.4.2
+        Security association lifetime: 4608000 kilobytes/3600 seconds
+        Responder-Only (Y/N): N
+        PFS (Y/N): N
+        Mixed-mode : Disabled
+        Transform sets={ 
+                ESP-AES-SHA:  { esp-aes esp-sha-hmac  } , 
+        }
+
+<…Output for other crypto map entries omitted…>
+
+6)
+
+Defining a crypto map does not have any effect until it is applied to an interface. 
+It should be applied to the interface that is closest to the IPsec peers. 
+In this case, it is Gi0/2. Display the configuration of interface Gi0/2 and verify that the crypto map is assigned.
+
+##
+
+Site3-Rtr#show run interface g0/2
+Building configuration...
+Current configuration : 135 bytes
+!
+interface GigabitEthernet0/2
+ ip address 192.168.3.2 255.255.255.0
+ duplex auto
+ speed auto
+ media-type rj45
+ crypto map VPNMAP
+end
+
+##
+
+
+7)
+
+Also, routing must be configured to forward the interesting traffic out the interface where the crypto map is applied.
+In this case, traffic that is destined to 10.10.4.0/24 must be routed out interface Gi0/2.
+In the lab, that is accomplished with a simple default route to the Core-Rtr.
+Verify that the routing table has a static default route to the Core-Rtr (192.168.3.1).
+
+Site3-Rtr#show ip route
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       a - application route
+       + - replicated route, % - next hop override
+
+Gateway of last resort is 192.168.3.1 to network 0.0.0.0
+
+S*    0.0.0.0/0 [1/0] via 192.168.3.1
+      10.0.0.0/8 is variably subnetted, 2 subnets, 2 masks
+C        10.10.3.0/24 is directly connected, GigabitEthernet0/1
+L        10.10.3.1/32 is directly connected, GigabitEthernet0/1
+      192.168.3.0/24 is variably subnetted, 2 subnets, 2 masks
+C        192.168.3.0/24 is directly connected, GigabitEthernet0/2
+L        192.168.3.2/32 is directly connected, GigabitEthernet0/2
+
+#####
+
+
+
+8)ISAKMP Configuration
+
+
+In the previous section, you explored the three things that must be configured for an IPsec tunnel, but there is still something missing: The keys that are used for encryption and hash authentication. 
+These keys are not configured. They are dynamically negotiated as needed. 
+How do two systems negotiate keys when their communication path crosses an untrusted network?
+This is the purpose of Internet Key Exchange (IKE), which uses Internet Security Association Key Management Protocol (ISAKMP) as the framework for completing this task.
+When working with IPsec technologies, the term Security Association (SA) is commonly used. 
+An SA is simply the instance of a secure tunnel and the parameters that define it. 
+You will see later in this discovery that there is not one IPsec tunnel, or SA. There are generally 3 SAs. 
+There is one bidirectional ISAKMP SA, which is used to securely negotiate the parameters of the IPsec SAs. 
+There are also two unidirectional IPsec SAs, one protecting data that is sent from peer 1 to peer 2 and the other protecting data sent from peer 2 to peer 1. 
+IKE negotiates these tunnels individually. IKE phase 1 is the negotiation of ISAKMP tunnels.
+IKE phase 2 is the negotiation of IPsec tunnels.
+
+
+You will look at the operation of ISAKMP shortly, but for now you will look at the configuration of ISAKMP.
+The job of ISAKMP is to negotiate the parameters that are associated with SAs. 
+You can make use of the acronym HAGLE (hash, authentication, group, lifetime, and encryption) when considering the configuration requirements of ISAKMP.
+
+8)
+
+
+Display the crypto isakmp policy configuration on Site3-Rtr.
+
+Site3-Rtr#show run | section crypto isakmp policy
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+lifetime 43200
+crypto isakmp policy 20
+ encr aes 256
+ hash sha256
+ authentication pre-share
+ group 5
+ lifetime 43200
+ 
+ ##
+ 
+ Note the following:
+There are two policies that are configured. One has a priority 10 and the other has a priority 20.
+
+Crypto isakmp policy 20 appears to have all 5 of the HAGLE parameters explicitly defined. 
+Actually, policy 10 does as well, but parameters set to their default values do not appear in the running configuration.
+
+10)
+
+Consider each of the HAGLE parameters of crypto isakmp policy 20 in turn:
+H: hash – This specifies the hash algorithm that will be used to provide data integrity in the ISAKMP SA. 
+   Policy 10 specifies the default SHA, which is 160-bit SHA1. Policy 20 defines SHA 256.
+   
+A: authentication – This specifies how the peer is authenticated.
+   In both policies in the example, pre-shared keys are specified. 
+   It is very important to understand that the pre-shared keys are not used for encryption. 
+   They are more like a password that is used to verify the peer. 
+   The idea is that there is a secret key that is only known by the two peers. 
+   Imposters attempting to negotiate an illegitimate tunnel should not know the key and will therefore fail authentication.
+   
+G: group – This is the Diffie-Hellman group number. The use of this will be explained later in the discovery exercise when you explore the operation of ISAKMP.
+
+L: lifetime – This specifies how long the ISAMKP SA can be used before it needs to be rekeyed. The value is specified in seconds.
+   The default, which was used in policy 10, is 86,400, which is the number of seconds in 24 hours.
+   Policy 20 specifies 43,200, which is 12 hours.
+   
+E: encr – Short for encryption, which specifies the encryption algorithm that is used to provide privacy for the ISAKMP SA.
+   Policy 10 specifies AES without an argument, which is 128-bit AES. Policy 20 specifies 256-bit AES.
+ 
+ 
+10)
+If pre-shared keys are configured for peer authentication, the keys must be defined within the configuration. 
+Display the crypto isakmp key statements in the configuration of the Site3-Rtr.
+
+Site3-Rtr#sh run | section crypto isakmp key
+crypto isakmp key KeyForSite3Site4 address 192.168.4.2    
+crypto isakmp key KeyForSite3Site1 address 192.168.1.2    
+crypto isakmp key KeyForSite3Site2 address 192.168.2.2
+
+11)
+
+As with crypto maps, you can also view the status of crypto isakmp policies, including the default settings that are in place.
+Use the command show crypto isakmp policy to do so.
+
+Site3-Rtr#show crypto isakmp policy
+Global IKE policy
+Protection suite of priority 10
+        encryption algorithm:   AES - Advanced Encryption Standard (128 bit
+                                keys).
+        hash algorithm:         Secure Hash Standard
+        authentication method:  Pre-Shared Key
+        Diffie-Hellman group:   #2 (1024 bit)
+        lifetime:               43200 seconds, no volume limit
+Protection suite of priority 20
+        encryption algorithm:   AES - Advanced Encryption Standard (256 bit 
+                                keys).
+        hash algorithm:         Secure Hash Standard 2 (256 bit)
+        authentication method:  Pre-Shared Key
+        Diffie-Hellman group:   #5 (1536 bit)
+        lifetime:               43200 seconds, no volume limit
+        
+###########
+
+
+ISAKMP Operation
+
+In this section of the discovery exercise, you will enable debugging of both ISAKMP and IPsec on the Site3-Rtr. 
+You will then generate interesting traffic by pinging the Site4-Srv from the Site3-Srv. 
+The ISAKMP and IPsec tunnels are quickly negotiated and established.
+You will then turn off debugging and examine the debug messages that were generated during the SA establishment process.
+
+
+12)
+
+Turn on debug for both crypto isakmp and crypto ipsec on the Site3-Rtr.
+
+Site3-Rtr#debug crypto isakmp
+Crypto ISAKMP debugging is on
+Site3-Rtr#debug crypto ipsec
+Crypto IPSEC debugging is on
+
+13)
+
+Access the desktop of the Site3-Srv, open a Terminal window, and ping the Site4-Rtr (10.10.4.10). 
+It may take a few seconds for the tunnels to negotiate before responses are received. 
+Use <Ctrl-C> to terminate the ping once responses are received.
+
+root@Site3-Srv:~# ping 10.10.4.10
+PING 10.10.4.10 (10.10.4.10) 56(84) bytes of data.
+64 bytes from 10.10.4.10: icmp_req=2 ttl=62 time=75.7 ms
+64 bytes from 10.10.4.10: icmp_req=3 ttl=62 time=26.6 ms
+64 bytes from 10.10.4.10: icmp_req=4 ttl=62 time=33.8 ms
+<Ctrl-C>
+--- 10.10.4.10 ping statistics ---
+4 packets transmitted, 3 received, 25% packet loss, time 3012ms
+rtt min/avg/max/mdev = 26.672/45.437/75.747/21.635 ms
+
+14)
+
+Return to the console of the Site3-Rtr, where there is debug output waiting for you to inspect.
+Much of the debug output is associated with advanced concepts or even only useful to Cisco IOS developers. 
+But there is much good information included in the output. 
+To prevent further messages from disrupting your analysis of the existing output, turn off all debugging on Site3-Rtr.
+
+
+Site3-Rtr#undebug all
+All possible debugging has been turned off
+
+15)
+
+This step provides selected highlights of debug messages that are associated with the crypto negotiations from the Site3-Rtr perspective.
+Explanations for the selected debug messages are also provided. 
+Note that in the live lab, you will see more messages in addition to the selected messages displayed here. 
+Also, variable factors in the live lab environment may cause discrepancies with the sample messages provided here.
+
+Before stimulating things with the ping traffic, there were no operational tunnels. 
+When a packet from 10.10.3.0/24 to 10.10.4.0/24 was sent out Gi0/2, the crypto map intercepted the packet. 
+It needs to be protected, but there is no IPsec SA. So, IPsec makes a request to ISAKMP to bring up the SA to 192.168.4.2:
+
+*Nov 19 19:29:51.724: IPSEC(sa_request): ,
+  (key eng. msg.) OUTBOUND local= 192.168.3.2:500, remote= 192.168.4.2:500,
+    local_proxy= 10.10.3.0/255.255.255.0/256/0,
+    remote_proxy= 10.10.4.0/255.255.255.0/256/0,
+    protocol= ESP, transform= esp-aes esp-sha-hmac  (Tunnel), 
+    lifedur= 3600s and 4608000kb, 
+    spi= 0x0(0), conn_id= 0, keysize= 128, flags= 0x0
+    
+If there was already an ISAKMP tunnel between the two routers, the IPsec quick mode negotiation would immediately start. 
+But, since there is no ISAKMP tunnel yet, the 6-step main mode negotiation process begins. 
+The Site3-Rtr packages up its list of acceptable ISAKMP policies and sends them to the Site4-Rtr. This is Main Mode step 1:
+
+*Nov 19 19:29:51.727: ISAKMP:(0):Old State = IKE_READY  New State = IKE_I_MM1 
+*Nov 19 19:29:51.727: ISAKMP:(0): beginning Main Mode exchange
+*Nov 19 19:29:51.727: ISAKMP:(0): sending packet to 192.168.4.2 my_port 500 peer_port 500 (I) MM_NO_STATE
+
+The Site4-Rtr inspects all the proposed policies that are sent from the Site3-Rtr. It looks for a match for its highest priority policy (that is the policy with the lowest number on the Site4-Rtr). After the Site4-Rtr makes its choice, it sends back a message specifying its choice. This is the beginning of Main Mode step 2:
+*Nov 19 19:29:51.762: ISAKMP (0): received packet from 192.168.4.2 dport 500 sport 500 Global (I) MM_NO_STATE
+*Nov 19 19:29:51.763: ISAKMP:(0):Input = IKE_MESG_FROM_PEER, IKE_MM_EXCH
+*Nov 19 19:29:51.763: ISAKMP:(0):Old State = IKE_I_MM1  New State = IKE_I_MM2 
+The Site3-Rtr must still validate that the policy that is selected by the Site4-Rtr is acceptable. If it finds that it is, Main Mode step 2 completes.
+*Nov 19 19:29:51.764: ISAKMP:(0):Checking ISAKMP transform 1 against priority 20 policy
+*Nov 19 19:29:51.764: ISAKMP:      encryption AES-CBC
+*Nov 19 19:29:51.764: ISAKMP:      keylength of 256
+*Nov 19 19:29:51.764: ISAKMP:      hash SHA256
+*Nov 19 19:29:51.764: ISAKMP:      default group 5
+*Nov 19 19:29:51.765: ISAKMP:      auth pre-share
+*Nov 19 19:29:51.765: ISAKMP:      life type in seconds
+*Nov 19 19:29:51.765: ISAKMP:      life duration (basic) of 43200
+*Nov 19 19:29:51.765: ISAKMP:(0):atts are acceptable. Next payload is 0
+*Nov 19 19:29:51.766: ISAKMP:(0):Old State = IKE_I_MM2  New State = IKE_I_MM3 
+Main Mode steps 3 and 4 perform Diffie-Hellman key exchange. Both sides generate their private nonces and their public nonces and send their public nonces to their peer over the untrusted network. They can then both use their own private nonce and their peer’s public nonce to compute the common shared key. Any attacker that intercepts the public nonces, without knowledge of the associated private nonces, cannot generate the shared key.
+*Nov 19 19:29:51.796: ISAKMP (0): received packet from 192.168.4.2 dport 500 sport 500 Global (I) MM_SA_SETUP
+*Nov 19 19:29:51.796: ISAKMP:(0):Input = IKE_MESG_FROM_PEER, IKE_MM_EXCH
+*Nov 19 19:29:51.796: ISAKMP:(0):Old State = IKE_I_MM3  New State = IKE_I_MM4 
+*Nov 19 19:29:51.797: ISAKMP:(0): processing KE payload. message ID = 0
+*Nov 19 19:29:51.806: ISAKMP:(0): processing NONCE payload. message ID = 0
+*Nov 19 19:29:51.807: ISAKMP:(1001):Old State = IKE_I_MM4  New State = IKE_I_MM4 
+After the policy exchange and the key exchange, there is now a private tunnel between the two routers. But, they have not yet authenticated each other. Main mode steps 5 and 6 complete the peer authentication process. In this case, it is done with pre-shared keys. If authentication is successful on both sides, then IKE Phase 1 completes.
+*Nov 19 19:29:51.807: ISAKMP:(1001):Send initial contact
+*Nov 19 19:29:51.808: ISAKMP:(1001):SA is doing pre-shared key authentication using id type ID_IPV4_ADDR
+*Nov 19 19:29:51.808: ISAKMP:(1001): sending packet to 192.168.4.2 my_port 500 peer_port 500 (I) MM_KEY_EXCH
+*Nov 19 19:29:51.809: ISAKMP:(1001):Old State = IKE_I_MM4  New State = IKE_I_MM5 
+*Nov 19 19:29:51.824: ISAKMP (1001): received packet from 192.168.4.2 dport 500 sport 500 Global (I) MM_KEY_EXCH
+*Nov 19 19:29:51.824: ISAKMP:(1001): processing ID payload. message ID = 0
+*Nov 19 19:29:51.824: ISAKMP:(1001): processing HASH payload. message ID = 0
+*Nov 19 19:29:51.825: ISAKMP:(1001):SA has been authenticated with 192.168.4.2
+*Nov 19 19:29:51.825: ISAKMP:(1001):Old State = IKE_I_MM5  New State = IKE_I_MM6 
+*Nov 19 19:29:51.825: ISAKMP:(1001):Old State = IKE_I_MM6  New State = IKE_P1_COMPLETE 
+With IKE phase 1 complete, ISAKMP can now complete the original request to perform a phase 2 negotiation of an IPsec SA.
+*Nov 19 19:29:51.857: ISAKMP (1001): received packet from 192.168.4.2 dport 500 sport 500 Global (I) QM_IDLE      
+*Nov 19 19:29:51.857: ISAKMP:(1001): processing HASH payload. message ID = 2065692087
+*Nov 19 19:29:51.857: ISAKMP:(1001): processing SA payload. message ID = 2065692087
+*Nov 19 19:29:51.857: ISAKMP:(1001):Checking IPSec proposal 1
+*Nov 19 19:29:51.857: ISAKMP: transform 1, ESP_AES 
+*Nov 19 19:29:51.857: ISAKMP:   attributes in transform:
+*Nov 19 19:29:51.858: ISAKMP:     encaps is 1 (Tunnel)
+*Nov 19 19:29:51.858: ISAKMP:     SA life type in seconds
+*Nov 19 19:29:51.858: ISAKMP:     SA life duration (basic) of 3600
+*Nov 19 19:29:51.858: ISAKMP:     SA life type in kilobytes
+*Nov 19 19:29:51.858: ISAKMP:     SA life duration (VPI) of 0x0 0x46 0x50 0x0
+*Nov 19 19:29:51.858: ISAKMP:     authenticator is HMAC-SHA
+*Nov 19 19:29:51.858: ISAKMP:     key length is 128
+*Nov 19 19:29:51.858: ISAKMP:(1001):atts are acceptable.
+ISAKMP has done its job. Now there are a few debug messages from IPsec indicating that there are now two IPsec SAs on the Site3-Rtr, one that is inbound (sa_dest = 192.168.3.2) and one that is outbound (sa_dest = 192.168.4.2).
+*Nov 19 19:29:51.865: IPSEC(create_sa): sa created,
+  (sa) sa_dest= 192.168.3.2, sa_proto= 50, 
+    sa_spi= 0x93A41E57(2477006423), 
+    sa_trans= esp-aes esp-sha-hmac , sa_conn_id= 1
+    sa_lifetime(k/sec)= (4608000/3600),
+  (identity) local= 192.168.3.2:0, remote= 192.168.4.2:0,
+    local_proxy= 10.10.3.0/255.255.255.0/256/0,
+    remote_proxy= 10.10.4.0/255.255.255.0/256/0
+*Nov 19 19:29:51.866: IPSEC(create_sa): sa created,
+  (sa) sa_dest= 192.168.4.2, sa_proto= 50, 
+    sa_spi= 0xBA193AEE(3122215662), 
+    sa_trans= esp-aes esp-sha-hmac , sa_conn_id= 2
+    sa_lifetime(k/sec)= (4608000/3600),
+  (identity) local= 192.168.3.2:0, remote= 192.168.4.2:0,
+    local_proxy= 10.10.3.0/255.255.255.0/256/0,
+    remote_proxy= 10.10.4.0/255.255.255.0/256/0
+    
+    
+#######################################################################################################
+
+
+
+#################################################3
+
+
+Verify IPsec Operational Status:
+
+
+16)
+Show the status of the ISAKMP SAs on the Site3-Rtr.
+    
+
+Site3-Rtr#show crypto isakmp sa
+IPv4 Crypto ISAKMP SA
+dst             src             state          conn-id status
+192.168.4.2     192.168.3.2     QM_IDLE           1003 ACTIVE
+IPv6 Crypto ISAKMP SA
+
+17)
+
+Displaying the SAs is useful to simply determine which ISAKMP peers a router currently has. 
+The detail argument can be added to the show command to provide more complete information. View the ISAKMP SA details.
+
+Site3-Rtr#show crypto isakmp sa detail
+Codes: C - IKE configuration mode, D - Dead Peer Detection
+       K - Keepalives, N - NAT-traversal
+       T - cTCP encapsulation, X - IKE Extended Authentication
+       psk - Preshared key, rsig - RSA signature
+       renc - RSA encryption
+IPv4 Crypto ISAKMP SA
+C-id  Local        Remote      I-VRF Status Encr Hash   Auth DH Lifetime Cap.
+1003  192.168.3.2  192.168.4.2       ACTIVE aes  sha256 psk  5  11:59:38     
+       Engine-id:Conn-id =  SW:3
+IPv6 Crypto ISAKMP SA
+
+Note the following:
+
+With the detail argument, you can now see things like the encryption and hash algorithms that protect the tunnel, which Diffie-Hellman group was used to negotiate the SA, and the lifetime remaining before the SA will need to be terminated and replaced with a new SA, using new keys.
+The hash algorithm is 256-bit SHA and the Diffie-Hellman group number is 5. The ISAKMP policy that was selected was number 20, not number 10. The policy number reflects a local priority. 
+The Site3-Rtr prefers its policy 10 over policy 20. But, because the process initiated from Site3, the Site3-Rtr packaged up all its proposals and sent them over to the Site4-Rtr. The Site4-Rtr gets to choose the policy that it prefers most from that list. 
+You will see in a later section of this discovery exercise that when the process is initiated from Site4, the Site3-Rtr gets to select the ISAKMP policy that it prefers most from the list that is offered by the Site4-Rtr.
+
+
+
+18)
+
+Display the IPsec SAs associated with the peer 192.168.4.2.
+
+Site3-Rtr#show crypto ipsec sa peer 192.168.4.2
+interface: GigabitEthernet0/2
+    Crypto map tag: VPNMAP, local addr 192.168.3.2
+   protected vrf: (none)
+   local  ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.4.0/255.255.255.0/0/0)
+   current_peer 192.168.4.2 port 500
+     PERMIT, flags={origin_is_acl,}
+    #pkts encaps: 3, #pkts encrypt: 3, #pkts digest: 3
+    #pkts decaps: 3, #pkts decrypt: 3, #pkts verify: 3
+    #pkts compressed: 0, #pkts decompressed: 0
+    #pkts not compressed: 0, #pkts compr. failed: 0
+    #pkts not decompressed: 0, #pkts decompress failed: 0
+    #send errors 0, #recv errors 0
+
+     local crypto endpt.: 192.168.3.2, remote crypto endpt.: 192.168.4.2
+     plaintext mtu 1438, path mtu 1500, ip mtu 1500, ip mtu idb GigabitEthernet0/2
+     current outbound spi: 0xB04742F8(2957460216)
+     PFS (Y/N): N, DH group: none
+
+     inbound esp sas:
+      spi: 0x96C675C5(2529588677)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 7, flow_id: SW:7, sibling_flags 80004040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4367964/3324)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     inbound ah sas:
+     inbound pcp sas:
+
+     outbound esp sas:
+      spi: 0xB04742F8(2957460216)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 8, flow_id: SW:8, sibling_flags 80004040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4367964/3324)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     outbound ah sas:
+     outbound pcp sas:
+     
+ ####
+ 
+  If you use the command show crypto ipsec sa without specifying a peer, you will see SAs associated with all configured peers. 
+  The Site3-Rtr is currently configured to peer with the Site1-ASA and the Site2-Rtr and the Site4-Rtr. 
+  Even though those SAs are not active, they will still be reported, resulting in much output.
+There are two ESP SAs, one inbound and one outbound.
+
+
+Examine the Site4-Rtr Configuration:
+
+When negotiating ISAKMP and IPsec SAs, the names that are used in the configuration are not important, but rather, the contents of the named constructs are important. In this section of the discovery, you will examine the configuration of the Site4-Rtr. 
+You will see that different names were used for ISAKMP and IPsec structures, but the definitions of the structures are compatible.
+
+
+19)
+
+Access the console of the Site4-Rtr and view the crypto map definition in its running configuration
+
+Site4-Rtr>enable
+Site4-Rtr#show run | section crypto map  
+crypto map TunnelMap 100 ipsec-isakmp 
+ description Tunnel to Site 3
+ set peer 192.168.3.2
+ set transform-set AESwithSHA 
+ match address Site4-to-Site3
+ crypto map TunnelMap
+ 
+Note the following:
+The crypto map name on Site4-Rtr is TunnelMap. VPNMAP was the name of the crypto map on the Site3-Rtr.
+The transform-set is named AESwithSHA on the Site4-Rtr, but it was ESP-AES-SHA on the Site3-RTtr.
+The crypto ACL names are similar, but reversed, with Site4-to-Site3 as the ACL name on the Site4-Rtr and Site3-to-Site4 on the Site3-Rtr.
+
+20)
+The crypto ACL does need to be, line by line, a mirror image of the crypto ACL configured on the peer router. 
+Display the ACL on the Site4-Rtr and verify that the source and destination specifications are reversed from what is defined on the Site3-Rtr.
+
+Site4-Rtr#show access-list
+Extended IP access list Site4-to-Site3
+    10 permit ip 10.10.4.0 0.0.0.255 10.10.3.0 0.0.0.255 (21 matches)
+
+21)
+
+View the crypto isakmp sections of the running configuration of Site4-Rtr.
+
+
+
+Site4-Rtr#show run | section crypto isakmp
+crypto isakmp policy 50
+ encr aes 256
+ hash sha256
+ authentication pre-share
+ group 5
+ lifetime 43200
+crypto isakmp policy 100
+ encr aes
+ authentication pre-share
+ group 2
+ lifetime 43200
+crypto isakmp key KeyForSite3Site4 address 192.168.3.2
+
+Note the following:
+The ISAKMP policies that are configured on the Site3-Rtr were numbered 10, 20, and 30. Here they are numbered 50 and 100.
+The policy number is a priority with the lower number being a higher priority. That is, policy 50 is preferred over policy 100. 
+This preference is local. Neither peer is aware of the relative priorities that are configured on the other.
+
+Initiate the SAs from Site 4
+
+In this section of the discovery exercise, you will clear the ISAKMP and IPsec SAs from both routers and then you will initiate interesting traffic from Site4 to Site3.
+You will see that tunnels still negotiate quickly and properly, but the ISAKMP policy that is selected is different.
+Site3-Rtr’s policy 50 matches Site4-Rtr’s policy 20, and Site3-Rtr's policy 100 matches Site4-Rtr’s policy 10. 
+That is, the preferred policy on the Site3-Rtr is the Site4-Rtr’s second choice, and vice versa. 
+When that is the case, the responding peer that is contacted by the initiating peer gets to make the selection.
+
+
+22)Return to the console of the Site3-Rtr and clear its ISAKMP tunnels. Then verify that they are removed.
+
+Site3-Rtr#clear crypto isakmp
+Site3-Rtr#show crypto isakmp sa
+IPv4 Crypto ISAKMP SA
+dst             src             state          conn-id status
+192.168.4.2     192.168.3.2     MM_NO_STATE       1004 ACTIVE (deleted)
+IPv6 Crypto ISAKMP SA
+
+It is normal for the entry to continue to show up for a short time period in the ISAKMP SA table, but it is marked deleted.
+If you choose to, you can wait a minute and run the show crypto isakmp sa command again, and the entry should be gone.
+
+
+23)Clear the IPsec tunnels. Verify that the ESP SAs to 192.168.4.2 have been deleted.
+
+Site3-Rtr#clear crypto sa
+Site3-Rtr#show crypto ipsec sa peer 192.168.4.2 
+interface: GigabitEthernet0/2
+    Crypto map tag: VPNMAP, local addr 192.168.3.2
+
+   protected vrf: (none)
+   local  ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.4.0/255.255.255.0/0/0)
+   current_peer 192.168.4.2 port 500
+     PERMIT, flags={origin_is_acl,}
+    #pkts encaps: 0, #pkts encrypt: 0, #pkts digest: 0
+    #pkts decaps: 0, #pkts decrypt: 0, #pkts verify: 0
+    #pkts compressed: 0, #pkts decompressed: 0
+    #pkts not compressed: 0, #pkts compr. failed: 0
+    #pkts not decompressed: 0, #pkts decompress failed: 0
+    #send errors 0, #recv errors 0
+
+     local crypto endpt.: 192.168.3.2, remote crypto endpt.: 192.168.4.2
+     plaintext mtu 1438, path mtu 1500, ip mtu 1500, ip mtu idb GigabitEthernet0/2
+     current outbound spi: 0x0(0)
+     PFS (Y/N): N, DH group: none
+
+     inbound esp sas:
+          
+     inbound ah sas:
+
+     inbound pcp sas:
+
+     outbound esp sas:
+
+     outbound ah sas:
+
+     outbound pcp sas:
+     
+
+24)
+
+Return to the console of the Site4-Rtr and clear both the ISAKMP and IPsec SAs. 
+Optionally, you can show the SA status to verify that they have been cleared.
+
+Site4-Rtr#clear crypto isakmp
+Site4-Rtr#clear crypto sa
+
+25)
+
+Access the desktop of the Site4-Srv. 
+Open a Terminal window and ping the Site3-Srv (10.10.3.10). Stop the ping after a few successes using <Ctrl-C>.
+
+25)
+
+Return to the console of the Site4-Rtr and display the ISAKMP SA details.
+
+Site4-Rtr#show crypto isakmp sa detail
+Codes: C - IKE configuration mode, D - Dead Peer Detection
+       K - Keepalives, N - NAT-traversal
+       T - cTCP encapsulation, X - IKE Extended Authentication
+       psk - Preshared key, rsig - RSA signature
+       renc - RSA encryption
+IPv4 Crypto ISAKMP SA
+C-id  Local        Remote      I-VRF Status Encr Hash   Auth DH Lifetime Cap.
+
+1005  192.168.4.2  192.168.3.2       ACTIVE aes  sha    psk  2  11:59:34     
+       Engine-id:Conn-id =  SW:5
+IPv6 Crypto ISAKMP SA
+
+Note: When the Site3-Rtr was the initiator, the ISAKMP policy used SHA-256 as the hash algorithm and it used Diffie-Hellman group 5. 
+Now, when the Site4-Rtr was the initiator, the ISAKMP policy is using SHA-1 as the hash algorithm and Diffie-Hellman group 2.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

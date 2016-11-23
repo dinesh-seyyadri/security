@@ -1,6 +1,6 @@
 use  the CLI to configure a site-to-site IPsec VPN to securely connect two or more subnets over the Internet or an intranet
 step 1:ACL: Used the select the required traffic
-step2: Isicamp Policy : IKE phas 1 policy
+step2: ISAKMP Policy : IKE phas 1 policy
 step3: Trasform Set:How to encrypt the user data
 step4: Crypto ACL:What traffic gets encrypted
 step5:Crypto map:Apply all the above
@@ -15,3 +15,158 @@ Step 5: Configure IPsec Crypto Maps
 Verifying the IPsec Configuration
 Configuring a Site-to-Site VPN on the Cisco ASA
 Monitoring Site-to-Site VPN Configuration in ASDM
+
+Step 1: Ensure That ACLs Are Compatible with IPsec:
+
+The figure shows an example of the site-to-site VPN tunnel negotiation process. Understanding the negotiation process can help you understand the IPsec site-to-site configuration process. 
+There are five steps shown in the example:
+a) Client A sends a TCP SYN to Server B.
+b) The packet matches a crypto ACL referenced by the crypto map applied to the outbound interface on Router A.
+The packet is “interesting” traffic.
+Router A finds that it does not have the appropriate IPsec SA available. 
+It needs to use the ISAKMP SA to initiate the IKE Phase 2 negotiations. The ISAKMP SA is not present. 
+Router A initiates IKE Phase 1 negotiation with Router B. The ISAKMP SA is established.
+
+c) Router A uses the ISAKMP SA to initiate negotiation of the IPsec SA to Router B.
+   The TCP SYN is forwarded across the IPsec SA. Router A implements the appropriate transforms and the packet is protected by the IPsec SA. 
+   Router B reverses the transforms and the TCP SYN packet from Client A is forwarded to Server B.
+d) Server B responds to the TCP SYN with a SYN ACK.
+e) The reply packet matches a crypto ACL referenced by the crypto map applied to the outbound interface on Router B. 
+   The packet is “interesting” traffic. Router B does not have the appropriate IPsec SA available. 
+   It uses the ISAKMP SA to initiate the IKE Phase 2 negotiation with Router A. The IPsec SA from Router B to Router A is established. 
+   The TCP SYN ACK is forwarded across the IPsec SA.
+   Router B implements the appropriate transforms and the packet is protected by the IPsec SA. 
+   Router A reverses the transforms and the cleartext TCP SYN ACK packet from Server B is forwarded to Client A.
+
+Now both IPsec SAs are established. 
+Two-way data forwarding can take place using the IPsec SAs. 
+The SAs will remain available until they reach their maximum lifetime or maximum data volume. 
+When the existing IPsec SAs expire, they will be replaced with new IPsec SAs negotiated using the ISAKMP SA.
+
+STEPS:
+
+Follow these steps to configure a site-to-site IPsec VPN:
+a) Ensure that ACLs are compatible with IPsec.
+b) Configure an ISAKMP policy to determine the ISAKMP parameters that will be used to establish the tunnel.
+c) Define the IPsec transform set.
+   The definition of the transform set defines the parameters that the IPsec tunnel uses, and can include the encryption and integrity algorithms.
+d) Create a crypto ACL. The crypto ACL defines which traffic should be sent through the IPsec tunnel and be protected by the IPsec process.
+e) Create and apply a crypto map. The crypto map groups the previously configured parameters together and defines the IPsec peer devices. 
+   The crypto map is applied to the outgoing interface of the VPN device.
+   
+
+
+
+Step 1: Ensure That ACLs Are Compatible with IPsec
+
+The first step in configuring Cisco IOS ISAKMP is to ensure that existing ACLs on perimeter routers, firewalls, or other routers do not block IPsec traffic. 
+Perimeter routers typically implement a restrictive security policy with ACLs, where only specific traffic is permitted and all other traffic is denied. 
+Such a restrictive policy may block IPsec traffic. Therefore, you must add specific permit statements to the ACL to allow IPsec traffic.
+
+The figure below and the show running-config command output that follows show a concatenated example of ACL entries permitting IPsec traffic for Router A.
+ACL 102 permits protocol 50 (ESP), protocol 51 (AH), and UDP port 500 (ISAKMP) traffic. 
+It also permits UDP port 4500 (non500-isakmp). 
+These are used by NAT-T, which is a commonly implemented extension to IKE and has been incorporated into IKEv2. 
+NAT-T facilitates VPN through intermediate devices that perform port address translation. 
+Since ESP does not use the concept of source and destination ports, a PAT device has difficulty with ESP. 
+NAT-T encapsulates IPsec within UDP, providing the requisite ports for PAT implementation. 
+NAT-T is more commonly an issue with remote-access VPN, but there are scenarios with site-to-site VPN where it applies.
+
+
+#####
+
+RouterA# show running-config
+!
+interface Serial0/1
+ ip address 172.30.1.2 255.255.255.0
+ ip access-group 102 in
+!
+access-list 102 permit ahp host 172.30.2.2 host 172.30.1.2
+access-list 102 permit esp host 172.30.2.2 host 172.30.1.2
+access-list 102 permit udp host 172.30.2.2 host 172.30.1.2 eq isakmp
+access-list 102 permit udp host 172.30.2.2 host 172.30.1.2 eq non500-isakmp
+
+###
+
+Note that the protocol keyword of esp equals the ESP protocol (number 50), the keyword of ahp equals the AH protocol (number 51), and the isakmp keyword equals UDP port 500.
+
+
+
+
+Step 2: Create ISAKMP IKE Phase 1 Policies
+
+The second major step in configuring Cisco IOS ISAKMP support is to define a suite of ISAKMP policies.
+The goal of defining a suite of policies is to define the IKE Phase 1 characteristics and allow ISAKMP peering between two IPsec endpoints.
+
+Use the crypto isakmp policy command to enter ISAKMP configuration mode. 
+ISAKMP policies define a set of parameters that IKE uses during Phase 1 negotiations.
+Use the no form of this command to delete an IKE policy. 
+The command syntax is crypto isakmp policy priority, where priority is a number that uniquely identifies the IKE policy and assigns a priority to the policy.
+
+Note:
+
+Assign the most secure policy the lowest priority number so that the most secure policy will find a match before any less-secure policies are considered.
+
+Within ISAKMP configuration mode, five parameters can be configured:
+
+Parameter |   Keyword  |     Accepted Values  |     Default Value |     Description
+         |             |                      |                   |
+---------|-------------|______________________| _________________-| ----------------------------------------------- |
+1) encryption | des aes aes 192 aes 256 | 56-bit DES-CBC 128-bit AES 192-bit AES 256-bit AES | des| 	Message encryption algorithm
+
+2) hash| sha md5 | 	SHA-1 (HMAC variant) MD5 (HMAC variant)| 	sha| Message integrity (hash) algorithm
+
+3)authentication | rsa-sig rsa-encr pre-share | RSA signatures RSA encrypted nonces preshared keys | rsa-sig | Peer authentication method
+
+4) group | 1 2 5 | 768-bit Diffie-Hellman 1024-bit Diffie-Hellman 1536-bit Diffie-Hellman | 1 | Key exchange parameters (Diffie-Hellman group identifier)
+
+5) lifetime | seconds | 	Can specify any number of seconds | 86,400 sec. (one day) | ISAKMP-established SA lifetime
+
+
+
+If you do not specify one of these commands for a policy, the default value will be used for that parameter.
+
+
+
+eg: 
+
+
+RouterA(config)#crypto isakmp policy 110
+RouterA(config–isakmp)#authentication pre-share
+RouterA(config–isakmp)#encryption aes 128
+RouterA(config–isakmp)#group 5
+RouterA(config–isakmp)#hash sha
+RouterA(config–isakmp)#lifetime 86400
+
+To configure a PSK, use the crypto isakmp key command in global configuration mode. You must configure this key whenever you specify PSKs in an ISAKMP policy. 
+Use the no form of this command to delete a PSK. The syntax for the command is as follows:
+
+crypto isakmp key keystring address peer-address
+crypto isakmp key keystring hostname peer-hostname
+
+ex: 
+RouterA(config)# crypto isakmp key cisco1234 address 172.30.2.2
+RouterA(config)# crypto isakmp policy 110  
+RouterA(config-isakmp)# authentication pre-share
+RouterA(config-isakmp)# exit
+
+
+RouterB(config)# crypto isakmp key cisco1234 address 172.30.1.2
+RouterB(config)# crypto isakmp policy 110
+RouterB(config-isakmp)# authentication pre-share
+RouterB(config-isakmp)# exit
+
+
+
+######################
+
+
+Step 3: Configure Transform Sets:
+
+
+
+
+
+
+
+

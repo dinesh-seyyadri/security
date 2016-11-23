@@ -1,0 +1,17 @@
+use  the CLI to configure a site-to-site IPsec VPN to securely connect two or more subnets over the Internet or an intranet
+step 1:ACL: Used the select the required traffic
+step2: Isicamp Policy : IKE phas 1 policy
+step3: Trasform Set:How to encrypt the user data
+step4: Crypto ACL:What traffic gets encrypted
+step5:Crypto map:Apply all the above
+
+Site-to-Site Tunnel Negotiation Process
+Configuring a Site-To-Site IPsec VPN
+Step 1: Ensure That ACLs Are Compatible with IPsec
+Step 2: Create ISAKMP IKE Phase 1 Policies
+Step 3: Configure Transform Sets
+Step 4: Create Crypto ACLs Using Extended ACLs
+Step 5: Configure IPsec Crypto Maps
+Verifying the IPsec Configuration
+Configuring a Site-to-Site VPN on the Cisco ASA
+Monitoring Site-to-Site VPN Configuration in ASDM

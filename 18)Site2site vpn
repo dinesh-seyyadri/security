@@ -163,7 +163,159 @@ RouterB(config-isakmp)# exit
 
 Step 3: Configure Transform Sets:
 
+A transform set is a combination of individual IPsec transforms that are designed to enact a specific security policy for traffic.
+During the IPsec SA negotiation that occurs in IKE Phase 2 quick mode, the peers agree to use a particular transform set.
+Transform sets combine these IPsec factors:
 
+- A mechanism for payload authentication: AHHMAC or ESP HMAC transform
+- A mechanism for payload encryption: ESP encryption transform
+- IPsec mode (transport versus tunnel)
+
+syntax:
+
+crypto ipsec transform-set transform-set-name transform1 [transform2 [transform3]]
+
+eg:
+RouterA(config)#crypto ipsec transform-set AES_SHA esp-aes esp-sha-hmac
+
+You can configure multiple transform sets and then specify one or more of the transform sets in a crypto map entry. 
+The IPsec SA negotiation uses the transform set that is defined in the crypto map entry to protect the data flows that are specified by the ACL referenced by that crypto map entry. 
+During the negotiation, the peers search for a transform set that has the same criteria at both peers.
+When such a transform set is found, it is selected and applied to the protected traffic as part of the IPsec SAs of both peers.
+
+Transform sets are negotiated during quick mode in IKE Phase 2 using the transform sets that you previously configured. 
+You can configure multiple transform sets and then specify one or more of the transform sets in a crypto map entry. 
+Configure the transforms from most to least secure, according to your policy. 
+The IPsec SA negotiation uses the transform set that is defined in the crypto map entry to protect the data flows that are specified by the ACL of that crypto map entry.
+
+During the negotiation, the peers search for a transform set that is the same at both peers, as illustrated in the figure below.
+In the figure, Router A is the initiator of the negotiation. It sends all its configured transform sets to Router B.
+Router B then compares each of the offered transform sets against its first transform set.
+If there is a match, Router B agrees to this transform set.
+If there is not a match, Router B compares each of the offered transform sets against its second transform set. 
+This negotiation continues until a match is found. In the example, a match is found with the second transform set of Router B.
+
+Phase 2 IPsec negotiates three factors, payload integrity authentication using either the AH or ESP HMAC algorithm, payload encryption using the ESP encryption algorithm, and IPsec tunnel mode, either transport or tunnel.
+
+Use the crypto ipsec transform-set global configuration command to define the name of the transform set, the encryption algorithm, and the hashed message authentication code or HMAC algorithm.
+
+The command places you into crypto transform configuration mode.
+However, the main thing you do here is configure tunnel mode. 
+The default of tunnel mode is typically what you want, so you rarely need to enter anything here.
+
+
+Step 4: Create Crypto ACLs Using Extended ACLs:
+
+Interesting traffic is defined by crypto ACLs in site-to-site IPsec VPN configurations. As shown in the figure, crypto ACLs perform these functions:
+Outbound: For outbound traffic, the ACL defines the flows that IPsec should protect.
+Inbound: The same ACL is processed for inbound traffic. The ACL defines traffic that should have been protected with IPsec by the peer. Packets are discarded if they match but arrive unprotected.
+
+Ultimately, traffic is processed against ACL statements.
+If there are multiple VPN connections that are defined, each will have its own crypto ACL.
+Traffic that is permitted by a crypto ACL is protected and sent through the appropriate VPN tunnels. 
+Traffic that is not permitted by any crypto ACL is not protected by IPsec and is forwarded in cleartext.
+
+The access-list command is used to create crypto ACLs. The permit keyword specifies that matching packets must be protected in this tunnel, and the deny keyword specifies that matching packets are not protected by this tunnel.
+Denied packets may end up being permitted by other crypto ACLs associated with other tunnels. 
+If a packet is not permitted by any crypto ACL, the packet is forwarded without protection. 
+The command syntax and parameter definitions for the basic form of extended IP ACLs are as follows:
+
+access-list access-list-number { permit | deny } protocol source source-wildcard destination destination-wildcard
+
+ex:
+
+RouterA(config)# access-list 110 permit tcp 10.0.1.0 0.0.0.255  10.0.2.0 0.0.0.255
+
+Any unprotected inbound traffic that matches a permit entry in the crypto ACL for a crypto map entry that is flagged as IPsec is dropped. This drop occurs because this traffic was expected to be protected by IPsec.
+It is important that the crypto ACLs defined on the peer devices are mirror images of each other. 
+If they are not, phase 2 negotiation between VPN peers will fail. 
+Both inbound and outbound traffic are evaluated against the same outbound IPsec ACL. 
+The ACLs are defined from the perspective of outbound traffic from each router.
+The peers negotiate security associations on a per-line basis in the crypto ACLs.
+Any line in a crypto ACL that does not have a mirror image in the peer crypto ACL is problematic.
+The example that is shown in the next figure illustrates symmetric crypto ACL configuration.
+
+For site 1, IPsec protection is applied to traffic between hosts on the 10.0.1.0 network as the data exits the RouterA S0/1 interface in route to site 2 hosts on the 10.0.2.0 network. For traffic from site 1 hosts on the 10.0.1.0 network to site 2 hosts on the 10.0.2.0 network, the ACL entry on Router A is evaluated as follows:
+source = hosts on 10.0.1.0 network
+destination = hosts on 10.0.2.0 network
+
+For incoming traffic from site 2 hosts on the 10.0.2.0 network to site 1 hosts on the 10.0.1.0 network, that same ACL entry on Router A is evaluated as follows:
+source = hosts on 10.0.2.0 network
+destination = hosts on 10.0.1.0 network
+
+Step 5: Configure IPsec Crypto Maps
+
+IPsec policies are defined in crypto maps. Each crypto map must define the following criteria:
+-The crypto ACL, which specifies which traffic should be protected by IPsec
+-The transform set, which specifies the IPsec protocols and cipher policies that are used to protect the traffic
+-The IPsec peer, which specifies where the IPsec-protected traffic is sent
+
+Optionally, a crypto map can specify the key management method. Normally IKE is used, but the option to manually define keys is available. A crypto map can also optionally specify a lifetime for the IPsec security association. With Cisco IOS Software, the default lifetime of an IPsec SA is 3600 seconds (one hour).
+For IPsec to succeed between two IPsec peers, the peers must contain compatible crypto maps. For two crypto maps to be compatible, they must meet the following minimum criteria:
+They must contain compatible (mirror image) crypto ACLs.
+They must have at least one transform set in common.
+They must identify the other peer.
+Use the crypto map global configuration command to create or modify a crypto map and enter the crypto map configuration mode. The command syntax for the crypto map command is as follows:
+crypto map map-name seq-num ipsec-isakmp 
+The map-name argument is a name that identifies the crypto map and has significance only to the local router. The seq-num argument is a sequence number that is needed when a device has multiple IPsec peers that have different security requirements. The ipsec-isakmp keyword tells the router that IKE will be used to automatically establish the IPsec SA.
+In crypto map configuration mode, define the criteria for the crypto map. Use the match address command to specify the crypto ACL, the set transform-set command to specify the transform set, and the set peer command to specify the peer.
+To activate a crypto map, use the crypto map command in interface configuration mode to apply the crypto map to an interface that is reachable from the VPN peer. You can apply only one crypto map to an interface. Make sure that you also configure the routing information that is needed to send packets into the tunnel. The figure shows crypto maps applied to the Serial0/1 interfaces of Routers A and B.
+
+
+You can specify multiple peers in a single crypto map for redundancy, as shown in the figure below. 
+If the first peer cannot be contacted, the second peer is used. There is no limit to the number of redundant peers that you can configure. 
+If multiple IPsec tunnels are required, you need to create multiple entries in the crypto map. 
+The example in the figure below shows only the crypto map configuration commands for Router A, and the crypto map contains only one crypto map entry.
+
+The example crypto map below has two entries. The sequence number (seq-num argument in the crypto map command) distinguishes the crypto map entries and can range from 1 to 65,535. 
+Crypto map entries are considered in order. 
+If there is overlap between the crypto ACLs referenced by the crypto map entries, the lower sequenced entry will take priority.
+
+####
+
+crypto map VPNMAP 10 ipsec-isakmp 
+ description Tunnel to Peer 1
+ set peer 198.51.100.10
+ set transform-set ESP-AES-SHA 
+ match address Local-to-Peer1
+crypto map VPNMAP 20 ipsec-isakmp 
+ description Tunnel to Peer 2
+ set peer 203.0.113.2
+ set transform-set ESP-AES-SHA 
+ match address Local-to-Peer2
+ 
+extended IP access list Local-to-Peer1
+    10 permit ip 10.10.0.0 0.0.255.255 172.16.111.0 0.0.0.255
+extended IP access list Local-to-Peer2
+    10 permit ip 10.10.0.0 0.0.255.255 192.168.9.0 0.0.0.255
+ 
+crypto ipsec transform-set ESP-AES-SHA esp-aes esp-sha-hmac 
+ mode tunnel
+interface gigabitethernet 0/0
+  crypto map VPNMAP
+  
+#####
+
+
+Entry number 10 in crypto map VPNMAP specifies the policy for theVPN to Peer 1 as follows:
+
+The match address command specifies which traffic to protect. It references the ACL named Local-to-Peer 1. IP traffic from the local network 10.10.0.0/16 to the Peer 1 network 172.16.111.0/24 will be protected. Also, implicitly, traffic that is received from the Peer 1 network 172.16.111.0/24 to the local network 10.10.0.0/16 will only be accepted if it arrives within a protected IPsec SA.
+The set transform-set command specifies how to protect the traffic. It references the transform-set named ESP-AES-SHA. This transform set specifies a tunnel mode SA that uses 128-bit AES for encryption and 160-bit SHA-1 for data integrity.
+The set peer command specifies where to send the protected packet. It specifies the peer public IP address of 198.51.100.10. The original IP header has been encrypted and therefore cannot be used for forwarding. The router will create a new IP header, specifying its own IP address as the source and the peer IP address as the destination.
+Entry number 20 specifies the policy for the VPN to Peer 2 in a similar way. To activate the crypto map, it must be applied to an interface that is reachable from each of the VPN peers.
+
+#######
+
+
+6)Verifying the IPsec Configuration:
+
+show crypto isakmp policy	      Displays configured IKE policies
+show crypto ipsec transform-set	Displays configured IPsec transform sets
+show crypto map	               Displays configured crypto maps
+show crypto ipsec sa	            Displays established IPsec tunnels
+show crypto isakmp sa	         Displays the IKE SAs
+debug crypto isakmp	            Debugs IKE events
+debug crypto ipsec	            Debugs IPsec events
 
 
 

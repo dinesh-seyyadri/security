@@ -1,0 +1,146 @@
+A basic Cisco AnyConnect SSL VPN provides users with flexible client-based access to sensitive resources over a remote-access VPN gateway, which is implemented on the Cisco ASA adaptive security appliance. 
+A basic Cisco AnyConnect full-tunnel SSL VPN solution uses usernames and passwords to provide basic user authentication.
+In addition, the Cisco ASA adaptive security appliance provides IP address assignment to the full-tunnel client and uses a split tunneling policy to tunnel only traffic to specific internal networks.
+This section explains how to configure a basic Cisco AnyConnect full-tunnel SSL VPN solution.
+
+1) Secure Sockets Layer and Transport Layer Security
+2) Basic Cisco AnyConnect SSL VPN
+3) Cisco AnyConnect SSL VPN Solution Components
+4) SSL VPN Server Authentication
+5) SSL VPN Client Authentication
+6) SSL VPN Client IP Address Assignment
+7) Basic AnyConnect SSL VPN Configuration Tasks
+
+1) Secure Sockets Layer and Transport Layer Security:
+
+TLS and its predecessor, SSL, are cryptographic protocols that provide secure communication on the Internet for such things as web browsing, email, Internet faxing, instant messaging, and other data transfers. Originally developed by Netscape, SSL has been universally accepted on the World Wide Web. In 1999, the IETF defined TLS 1.0 in RFC 2246.
+The update provided a standard-based upgrade to SSL 3.0. Modern systems implement TLS, but the term SSL is often used interchangeably with TLS by IT professionals.
+
+SSL and TLS provide confidentiality, integrity, and autPhase 3: Client certificate (if required) and key exchange
+In that sense, these protocols encrypt and authenticate from the session layer up, including the presentation and application layers.
+They support not only HTTPS, but also FTPS, POP3S, LDAPS, wireless security (EAP-TLS), and other application-layer protocols.
+
+Cryptographically, SSL and TLS rely on PKI and digital certificates for authenticating the VPN endpoints.
+In e-commerce environments, typically only the server side is authenticated and requires a digital certificate. 
+Other applications are increasingly using mutual authentication, where both the client and the server use digital certificates to identify themselves.
+
+
+The SSL and TLS protocols support the use of various different cryptographic algorithms, or ciphers, for use in operations such as authenticating the server and client to each other, transmitting certificates, and establishing session keys. 
+Symmetric algorithms are used for bulk encryption; asymmetric algorithms are used for authentication and the exchange of keys, and hashing is used as part of the authentication process. 
+
+a) Confidentiality : RC4 ,3des,AES,IDEA
+b) Integrity       : Md5 ,SHA-1,SHA-2
+c) Authentication  : RSA,DSA,EC
+d) Key mangement   : RSA,DSS,DH
+
+The SSL and TLS protocols work in distinct phases: the session establishment phases, in which the negotiation of parameters and peer authentication take place, and a data transfer phase that provides a protected path between the client and the server.
+These phases occur inside the SSL/TLS Record Protocol.
+The following describes the SSL/TLS session establishment and key management:
+
+Phase 1: Establish client-server security capabilities.
+In Phase 1 (initiated by the client), hello messages are exchanged between the client and the server to negotiate parameters, including authentication and encryption algorithms.
+These messages include information about whether RSA or DH will be used as the key exchange method.
+
+Phase 2: Server certificate and key exchange
+In Phase 2 (initiated by the server), one- or two-way authentication between the client and the server is performed. 
+The server begins this phase by sending its certificate to the client.
+Unlike most authenticated solutions that consider server authentication to be optional, HTTP and SSL consider client authentication to be optional.
+A premaster key is also sent by the client by using the public key of the server to start protecting the session if RSA is used.
+
+In Phase 3 (initiated by the client), if client authentication is required, then the client sends its certificate to the server, the session key is calculated, and the cipher suite is activated. 
+HMAC is used to protect the integrity of the data transfer by using either keyed Algorithm SHA-1 or keyed MD5. 
+Confidentiality is provided by an encryption algorithm that was negotiated between the peers.
+Example encryption algorithms include RC4, 3DES, AES, and IDEA.hentication services to the applications that use them.
+
+Phase 4: Finish
+In Phase 4, the data transfer starts, beginning with the exchange of session keys.
+Each SSL session is uniquely identified by a session ID that is exchanged during the authentication process. 
+The SSL session ID is used to differentiate between new and old sessions.
+Old sessions might exist because session IDs can be cached, but usually not for longer than 24 hours.
+
+SSL also has the ability to resume a previously negotiated session if TCP communication between a client and a server is interrupted.
+During the initial exchange between the SSL client and the server, the server gives the client a session ID that helps the server to keep track of that SSL session. 
+The client can ask the server to resume the SSL session without having to renegotiate parameters.
+
+
+
+
+2) Basic Cisco AnyConnect SSL VPN:
+
+
+In a basic Cisco AnyConnect full-tunnel, remote-access SSLVPN solution, you can use the Cisco AnyConnect Secure Mobility Client version to establish an SSL/TLS tunnel with the Cisco ASA. 
+The basic solution uses bidirectional authentication: the client authenticates the Cisco ASA security appliance with a certificate-based authentication method and the Cisco ASA authenticates the user against its local user database, which is based on a username and password.
+
+After authentication, the security appliance applies a set of authorization and accounting rules to the user session. 
+When the Cisco ASA adaptive security appliance has established an acceptable VPN environment with the remote user, the remote user can forward raw IP traffic into the SSL/TLS tunnel.
+
+The Cisco AnyConnect client creates a virtual network interface to provide this functionality. 
+This virtual adapter requires an IP address, and the most basic method to assign an IP address to the adapter is to create a local pool of IP addresses on the Cisco ASA security appliance. 
+The client can use any application to access any resource behind the Cisco ASA security appliance VPN gateway, subject to access rules and the split tunneling policy that are applied to the VPN session.
+
+The user can use Cisco AnyConnect in the following modes:
+
+a) Standalone mode:Enables the user to establish a Cisco AnyConnect connection without using a web browser. If you have permanently installed Cisco AnyConnect on the user PC, the user can run in standalone mode. 
+   In standalone mode, a user opens Cisco AnyConnect just like any other application and enters the username and password credentials into the fields of the Cisco AnyConnect GUI. Depending on how you configure the system, the user might also be required to choose a group. 
+   When the connection is established, the Cisco ASA security appliance checks the version of Cisco AnyConnect on the user PC and, if necessary, the client downloads the latest version.
+
+b) WebLaunch mode:Enables the user to enter the URL of the Cisco ASA security appliance in the Address or Location field of a browser, using the HTTPS protocol. 
+   The user then enters the username and password information in a login window, chooses the group, and clicks Submit. 
+   If you have specified a banner, that information appears and the user acknowledges the banner by clicking Continue.
+   
+   
+   The portal window appears. To start Cisco AnyConnect, the user clicks Start AnyConnect on the main pane. 
+   A series of documentary windows appears. 
+   When the Connection Established dialog box appears, the connection is working and the user can proceed with online activities.
+
+   If you configure the Cisco ASA security appliance to deploy the Cisco AnyConnect package, you ensure that the Cisco ASA is the single point of enforcement as to which versions of Cisco AnyConnect can establish a session, even if you deploy Cisco AnyConnect with an enterprise software deployment system.
+   When you load a Cisco AnyConnect package on the Cisco ASA security appliance, you enforce a policy to which only versions as new as the version loaded on the Cisco ASA can connect. 
+   Cisco AnyConnect upgrades itself when it connects to the Cisco ASA security appliance. 
+   Alternatively, you can deploy a local policy file that specifies whether the client bypasses the client downloader, eliminating the requirement for the client package file on the Cisco ASA security appliance. 
+   However, other features, such as WebLaunch and automatic updates, are disabled.
+
+
+3) Cisco AnyConnect SSL VPN Solution Components:
+
+
+In the Cisco AnyConnect full-tunnel remote-access SSL VPN solution, you can use the Cisco AnyConnect Secure Mobility Client (Cisco AnyConnect) to establish an SSL/TLS tunnel with the Cisco ASA. 
+The solution uses bidirectional authentication, in which the client authenticates the Cisco ASA security appliance with a certificate-based authentication method, and the Cisco ASA security appliance authenticates the user using certificates and a local or external user database, or a combination.
+
+After authentication, the security appliance applies a set of authorization and accounting rules to the user session.
+When the Cisco ASA security appliance has established an acceptable VPN environment with the remote user, the remote user can forward raw IP traffic into the SSL/TLS tunnel. 
+The Cisco AnyConnect client creates a virtual network interface to provide this functionality. 
+The client can use any application to access any resource behind the Cisco ASA VPN gateway, subject to access rules that are applied to the VPN session.
+
+Note:
+DTLS : Datagram tls
+DTLS is an alternative VPN transport protocol to SSL/TLS. DTLS allows datagram-based applications to communicate in a way that is designed to prevent eavesdropping, tampering, or message forgery. 
+The DTLS protocol is based on the stream-oriented TLS protocol and is intended to provide similar security guarantees.
+
+
+4) SSL VPN Server Authentication:
+
+
+
+As with clientless SSL VPN, the Cisco ASA requires a server identity certificate, which the appliance sends to remote SSL VPN clients in order for remote clients to authenticate the Cisco ASA.
+By default, the security appliance will create a self-signed X.509 certificate on each reboot, resulting in many client warnings when attempting SSL VPN access, as the certificate cannot be verified by any means. 
+You can address this issue using one of the two approaches:
+
+a) Creating a permanent self-signed certificate which is persistent across reboots
+b) Enrolling your Cisco ASA with an external CA (the recommended approach)
+
+
+5) SSL VPN Client Authentication:
+
+
+
+When Cisco AnyConnect SSL VPN users connect to a Cisco ASA, the users can choose their connection profile by choosing the desired profile from a drop-down list or connecting to the group URL.
+If no specific connection profile is chosen, Cisco ASA security appliance will assign them to the DefaultWEBVPNGroup connection profile. 
+By default, this profile is configured to use user authentication, using the local user database on the Cisco ASA security appliance.
+
+When the user chooses a connection profile (or uses the DefaultWEBVPNGroup connection profile), the user is required to authenticate, using a method that is defined in the connection profile. 
+The simplest user authentication method consists of using usernames and static passwords, which are stored in the local user database on the Cisco ASA security appliance.
+When a client enters a username and password into the login prompt, both are sent to the Cisco ASA security appliance. 
+On the Cisco ASA appliance, the provided username and password are compared to the locally stored username and password. 
+If the provided and stored username and password match, the Cisco ASA security appliance establishes an SSL VPN session and applies a set of policies to the session.
+
+

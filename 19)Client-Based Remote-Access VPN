@@ -144,3 +144,66 @@ On the Cisco ASA appliance, the provided username and password are compared to t
 If the provided and stored username and password match, the Cisco ASA security appliance establishes an SSL VPN session and applies a set of policies to the session.
 
 
+6) SSL VPN Client IP Address Assignment:
+
+
+
+
+
+When clients connect to a full-tunnel SSL VPN, the VPN gateway assigns an IP address to the virtual network interface (adapter) of the client PC.
+The PC uses this IP address as the source IP address to access resources beyond the VPN gateway. 
+These IP addresses can be from the private IP address space, but they must be routed to the gateway (Cisco Adaptive Security Appliance) in the internal network.
+
+The Cisco ASA can assign IP addresses in an SSL VPN full-tunnel solution in several different ways:
+
+a) Use an IP address pool that is configured on the Cisco ASA, and assign the pool to a default or custom connection profile. 
+ Any client that uses this specific connection profile will be assigned an IP address from this pool. 
+ This method is the simplest method if all users use the same connection profile and there is no need to differentiate between the users based on IP addresses.
+
+b) Use an IP address pool that is configured on the Cisco ASA, and assign the pool to a default or custom group policy. Any connection profiles that use this specific group policy will be assigned IP addresses from this pool. 
+   This method is a good method to use if you want to differentiate between multiple groups of users on the Cisco ASA and in other parts of the protected network.
+
+c) Configure the IP addresses as part of the user account in the local user database, enabling per-user IP addresses.
+   This method is a good method to use if you want to assign specific per-user policies on the Cisco ASA and in other parts of the protected network.
+   This approach also simplifies user auditing and tracking because you can uniquely identify each user with a particular IP address when the user is connected to the VPN.
+   
+Note:
+
+The Cisco ASA supports three different methods to assign an IP address back to the client: local address pool, DHCP server, and RADIUS server.
+
+What are two basic IP address assignment options for SSL VPN clients? (Choose two.)
+
+The correct answers are "using a connection profile local pool" and "using a local pool in a group policy."
+
+
+
+7) Basic AnyConnect SSL VPN Configuration Tasks:
+
+
+
+General deployment tasks are necessary to create a basic Cisco AnyConnect full-tunnel SSL VPN:
+
+1) Install the Cisco AnyConnect client image, which should already be copied to the Cisco ASA flash memory. 
+   You can also skip this step, and you will be asked to install the AnyConnect image later when enabling full-client SSL VPN access.
+   
+2) Enable Cisco AnyConnect SSL VPN on Cisco ASA:
+   
+  -  Enable full-client SSL VPN traffic termination on a Cisco ASA interface, which enables the security appliance SSL VPN server function. When enabling full-client SSL VPN access, you will be asked to select and install the Cisco AnyConnect image file, if you have not done it before.
+  -  You must assign the installed identity certificate of the Cisco ASA to the chosen VPN traffic termination interface.
+  
+3) Define an IP address pool.
+
+4) Configure identity NAT for VPN client access.
+
+5) Edit the default group policy or create a custom policy:
+
+   - Make sure that support for Cisco AnyConnect SSL VPN is enabled.
+   - Optionally, configure split tunneling, which allows you to tunnel only certain traffic to specific internal protected networks, while all other traffic bypasses the VPN tunnel.
+
+6) Edit the default connection profile or create a custom profile:
+
+   -  Allow the user to choose a connection profile at login. This setting is required if you want to assign users to a specific connection profile rather than having them use the default DefaultWebVPNGroup profile.
+   - Select the authentication method. The default option is local AAA authentication.
+   - To provide IP addresses to the Cisco AnyConnect clients, create a local address pool.
+
+

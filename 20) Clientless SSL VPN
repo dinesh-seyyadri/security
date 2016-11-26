@@ -1,0 +1,231 @@
+Clientless SSL VPN solutions provide browser-based access to resources behind the Cisco ASA adaptive security appliance. 
+In clientless SSL VPNs, users can access resources without any special client software. 
+Users can access web-based applications, CIFS file shares, and FTP servers when using clientless SSL VPNs.
+Using application plug-ins, port forwarding, and smart tunnels, users can also access almost any application that uses static TCP ports. 
+This section describes clientless SSL VPN and deployment of the basic clientless SSL VPN.
+
+1) Cisco Clientless SSL VPN
+2) Cisco Clientless SSL VPN Use Cases
+3) Cisco Clientless SSL VPN Resource Access Methods
+4) Basic Clientless SSL VPN Solution
+5) Server Authentication in Basic Clientless SSL VPN
+6) Client-Side Authentication in Basic Clientless SSL VPN
+7) Clientless SSL VPN URL Entry and Bookmarks
+8) Basic Access Control for Clientless SSL VPN
+9) Basic Clientless SSL VPN Configuration Tasks
+
+
+1) Cisco Clientless SSL VPN:
+
+
+
+Remote-access VPNs generally connect individual remote users to a set of protected resources in the enterprise internal network or in a perimeter, extranet, or demilitarized zone buffer network.
+Remote-access VPNs use strong client authentication and cryptographic data transmission protection across an untrusted transport network, usually the Internet.
+Most remote-access VPNs require various security controls in addition to authentication and transmission protection.
+The two primary methods for providing transmission protection over VPNs, SSL/TLS and IPsec, provide comparable transmission security features.
+Often, VPN gateways will strictly limit access to sensitive resources, may request that remote users download additional security controls from the enterprise network, and may assess the security posture of remote clients before allowing access.
+Also, remote-access VPNs must support any type of client connectivity, such as wireless, wired, DSL, or cable modem access, as long as it has routed IP access to the VPN gateway. 
+Remote-access VPN users often operate in environments that do not natively support or allow VPN connectivity, such as behind the firewalls of other enterprises.
+
+
+
+Cisco clientless SSL VPN is one of the three types of remote-access VPNs that are available with the Cisco Adaptive Security Appliance (ASA) and the Cisco Integrated Services Router. 
+These devices support the following types of remote-access VPNs:
+a) Remote-access clientless SSL VPNs (illustrated in figure below)
+b) Remote-access Cisco AnyConnect full-tunnel client-based SSL VPNs
+c) Remote-access Cisco AnyConnect full-tunnel client-based IPsec VPNs
+
+
+Cisco clientless SSL VPNs give organizations the flexibility of providing remote access to protected network resources, even when the remote device is not managed and has no VPN client software. 
+In clientless SSL VPN deployments, remote users use a web browser to establish an SSL/TLS VPN connection with a VPN gateway, which can be a Cisco ASA adaptive security appliance or a Cisco IOS router. 
+The VPN gateway acts as a proxy device to protected network resources.
+After bidirectional authentication between the VPN gateway and the user, the gateway presents the user with a web portal interface through which remote users can navigate the network. 
+The gateway also applies a set of authorization and accounting rules for the user session. 
+Although clientless SSL VPNs are easier to deploy than full-tunnel remote-access VPNs, they provide only limited application access and may pose additional security risks to the enterprise.
+
+
+The Cisco clientless remote-access SSL VPN architecture has the following benefits:
+
+a) It can traverse most firewalls and NAT devices, because the SSL VPN encapsulation uses the HTTPS port (TCP port 443) and is indistinguishable from an HTTPS session to the transport network operator.
+b) It does not require special-purpose desktop VPN client software to be preinstalled on the system.
+c) It does not require administrative rights on clients.
+d) It offers the flexibility to establish VPN connections from any Internet-enabled system, whether a company-managed or a noncompany-managed system.
+e) It uses the native SSL encryption of a web browser to provide data confidentiality.
+
+
+
+However, the clientless remote-access SSL VPN architecture has some limitations:
+
+a) It does not support all IP applications, although most web-based client-server enterprise applications are supported.
+b) It may require user training, because the manner in which users access some resources may change.
+c) It does not support low-latency forwarding and the use of real-time applications, due to its proxying nature.
+
+Note:
+
+The Cisco ASA adaptive security appliance also supports site-to-site VPNs, in which the Cisco ASA security appliance can peer with another Cisco ASA security appliance or with a router that is running Cisco IOS Software.
+The Cisco clientless SSL VPN solution requires a Cisco AnyConnect Premium license on the Cisco ASA security appliance.
+####################
+
+2) Cisco Clientless SSL VPN Use Cases:
+
+
+Usage of the Cisco Adaptive Security Appliance (ASA) clientless SSL VPN solution depends on the type of clients that need to access the network and the level of connectivity that they require. 
+When using the clientless solution, the Cisco ASA security appliance acts as a proxy for external devices, providing access to internal components. 
+This process protects internal devices because the external devices do not have complete connectivity to them.
+
+Cisco clientless SSL VPN connections on the Cisco ASA security appliance differ from remote-access IPsec connections in two ways. 
+The first difference is how clientless SSL VPN connections interact with SSL-enabled servers. 
+The second difference involves the precautions that you must take to reduce security risks.
+
+When a clientless SSL VPN user connects to an SSL-enabled web server, the security appliance establishes a secure connection and validates the server SSL certificate. 
+The browser never receives the presented certificate, so it cannot examine and validate the certificate.
+
+The current implementation of clientless SSL VPNs on the Cisco ASA security appliance does not permit communication with sites that present expired certificates. 
+Even if a user has added a certificate to the trusted certificates list on the operating system, the security appliance does not perform trusted CA certificate validation. 
+Because the Cisco ASA appliance acts as a proxy, users cannot benefit from certificate validation of pages that are delivered from an SSL-enabled web server until the server has a valid certificate.
+
+By default, the Cisco ASA adaptive security appliance permits all portal traffic to all web resources, such as HTTPS, CIFS, RDP, and plug-ins. 
+The Cisco ASA appliance clientless service rewrites each URL to a URL that is meaningful only to the security appliance. 
+Users cannot confirm that they are on the site that they had requested by looking at the rewritten URL that displays in the browser.
+
+3) Cisco Clientless SSL VPN Resource Access Methods:
+
+Clientless SSL VPNs do not offer the complete network access that is provided by full-tunnel VPNs. 
+To enable remote users to access enterprise applications, the VPN gateway acts as a proxy.
+It transforms web applications and some nonweb applications so that they can be SSL-protected.
+
+You can choose from these options to provide access to network resources:
+
+a) Basic web portal access to web resources: With a minimal clientless SSL VPN configuration, users can access internal web pages and web-based applications using HTTP and HTTPS, as well as file shares using CIFS and FTP.
+   Users access these resources via bookmarks or manual URL entry. When the client browser establishes the SSL session and the user authenticates, the gateway can present a page with resource bookmarks. 
+   These bookmarks allow the user to access preconfigured web pages or file shares. 
+   The user can also enter the address of the resource and be redirected to it.
+   
+b) Application plug-ins for application access: This option provides users with thin-application client access to enterprise resources. 
+   It is the recommended approach for application access, but it supports a limited set of applications.
+   Application plug-ins (Cisco Adaptive Security Appliance [ASA] only), which are also referred to as thin-client connections, exist for well-known applications, such as RDP, Telnet, Citrix, VNC, and SSH. 
+   They allow the user to launch a Java application plug-in inside the browser and connect to an internal server that is running that application.   
+
+c) Smart tunnels for application access: This option provides users with native-application client access to enterprise resources.
+   Smart tunnels are connections between an application and a remote site, using a clientless SSL VPN session as the pathway. 
+   A successor technology to port forwarding, smart tunnels do not require administrator privileges on the remote computer.
+   Clientless VPN users can run Winsock2 TCP applications, just like full-tunnel SSL VPN client access.
+   The smart tunnel approach is recommended for all applications that do not have a plug-in.
+   
+   
+   Note:
+   
+   Port forwarding is an older method of providing application access.
+   Like smart tunnels, port forwarding provides users with native-application client access to enterprise resources. 
+   However, port forwarding should be used only if smart tunnels cannot be deployed, such as on Linux workstations or when running older Cisco ASA adaptive security appliance software versions.
+
+
+4) Basic Clientless SSL VPN Solution:
+
+In a basic Cisco clientless SSL VPN solution on the Cisco Adaptive Security Appliance (ASA), remote users use a standard web browser to establish an SSL or TLS (SSL/TLS) session with the Cisco ASA security appliance. 
+The basic solution uses bidirectional authentication. With bidirectional authentication, the client uses certificate-based authentication to authenticate the Cisco ASA security appliance, and the appliance authenticates the user using a username and password from its local user database.
+After authentication, the Cisco ASA security appliance applies a set of authorization rules to the user session and presents the user with a web portal. 
+This portal allows the user to access internal resources using only a browser, a URL input field, or preconfigured bookmarks.
+
+In the basic clientless solution, the client supports a subset of services that are available to an SSL VPN client-based session, such as web application access and browser-based file-share access to internal resources. A clientless SSL VPN provides secure and easy access to a range of web resources and web-enabled applications from almost any computer on the Internet:
+
+a) Internal websites
+b) Web-enabled applications
+c) Microsoft Windows NT and Active Directory file shares
+d) Microsoft Outlook Web Access
+
+5) Server Authentication in Basic Clientless SSL VPN:
+
+The Cisco Adaptive Security Appliance (ASA) requires a server identity certificate that the appliance sends to remote SSL VPN clients in order for remote clients to authenticate the Cisco ASA appliance.
+
+By default, the security appliance will create a self-signed X.509 certificate on each reboot, resulting in many client warnings when attempting SSL VPN access because the certificate cannot be verified. You can address this issue using one of the two approaches:
+
+* By creating a permanent self-signed certificate that is persistent across reboots, and which you can save on the client, if the remote users have the option of initially accessing the Cisco ASA security appliance over a trusted network and saving the identity certificate of the Cisco ASA security appliance to their local storage. 
+  That option is usually not the case with most clients and is generally not recommended in production environments.
+
+* By enrolling your Cisco ASA security appliance with an external CA. Your clients can obtain the root certificate of the CA from this external CA and then authenticate the identity of the certificate that is installed on the Cisco ASA security appliance. 
+  This method implies that the Cisco ASA security appliance must also obtain a root certificate and identity certificate from a CA server.
+
+
+6) Client-Side Authentication in Basic Clientless SSL VPN:
+
+When a clientless SSL VPN user connects to the Cisco Adaptive Security Appliance (ASA), the user may be permitted to choose a connection profile by choosing the desired profile from a drop-down list.
+If no specific connection profile is chosen, the Cisco ASA security appliance assigns the user to the DefaultWEBVPNGroup connection profile.
+This profile is configured by default to use user authentication using the local user database on the Cisco ASA security appliance.
+
+When the user chooses a connection profile (or uses the DefaultWEBVPNGroup connection profile), the user is required to authenticate using a method that is defined in the connection profile. 
+The simplest user authentication method is using usernames and static passwords, which are stored in the local user database on the Cisco ASA adaptive security appliance.
+When a client enters a username and password into the login prompt, both are sent to the Cisco ASA security appliance. 
+On the Cisco ASA security appliance, the provided username and password are compared to the locally stored username and password. 
+If the provided and stored username and password match, the Cisco ASA appliance establishes an SSL VPN session and applies a set of policies to the session.
+
+
+7) Clientless SSL VPN URL Entry and Bookmarks:
+
+When a clientless SSL VPN successfully authenticates to the Cisco Adaptive Security Appliance (ASA), the user is presented with a web portal where they can access protected resources behind the Cisco ASA security appliance. 
+By default, this portal enables the user to access all web resources, such as HTTP and HTTPS websites and CIFS and FTP file shares.
+
+The portal includes a URL entry field, which enables users to specify the URL of the resource that they want to access by choosing a protocol from the drop-down menu and entering a resource URL. 
+When users click Browse, the SSL VPN portal of the Cisco ASA security appliance retrieves the requested resource and displays it in the browser window.
+
+In addition to the URL entry field, the figure shows examples of a basic clientless SSL VPN feature called Bookmarks. 
+The Bookmark feature enables you to specify a list of often-used resources to which users can quickly navigate. Bookmarks are configured as a part of a group policy. 
+When a user logs in to the SSL VPN portal, all the bookmarks that are enabled in the group policy of the user are displayed on the portal home page.
+
+Note:
+
+The URL entry capability can be disabled.
+
+
+8) Basic Access Control for Clientless SSL VPN
+
+You can use web ACLs to permit or deny access to URLs that are reachable over the SSL VPN portal. For example, you may want to use web ACLs to permit access only to specific targets within the private network, to permit access only to the private network, to deny Internet access, or to permit access only to reputable sites.
+By default, the Cisco Adaptive Security Appliance (ASA) permits all portal traffic to all web resources.
+The clientless service on the Cisco ASA security appliance rewrites each URL to one that is meaningful only to itself; the user cannot use the rewritten URL displayed on the page that is accessed to confirm that they are on the site they requested. 
+To avoid placing users at risk, you can assign a web ACL to group policies that are configured for clientless access to control traffic flows from the portal. 
+Without such an ACL, a user could receive an authentication request from an outside fraudulent banking or commerce site. 
+To implement a web ACL, you must first create the web ACL and then assign it to a group policy.
+
+9)Basic Clientless SSL VPN Configuration Tasks:
+
+Five general deployment tasks are necessary to configure basic clientless SSL VPN:
+
+1) Enabling clientless SSL VPN traffic termination on a Cisco ASA interface: Enables the SSL VPN server function of the Cisco Adaptive Security Appliance (ASA).
+
+2) Configuring clientless SSL VPN server authentication: To complete this task, you must first provision the identity certificate of the Cisco ASA security appliance to enable SSL/TLS server authentication. 
+   Then attach the installed identity certificate to the Cisco ASA security appliance interface on which you have enabled clientless SSL VPN.
+3) Configuring user authentication: Involves the following subtasks:
+   Create accounts for clientless SSL VPN users in the local user database of the Cisco ASA security appliance. 
+   Ensure that the clientless SSL VPN users can log in only to the VPN, and not to the Cisco ASA security appliance management user interfaces (the Cisco Secure Desktop Manager and the CLI).
+   Configure a group policy for clientless SSL VPN by choosing clientless SSL VPN as the tunneling protocol for the group policy. 
+   You can configure that policy by editing the default group policy or creating a custom group policy. 
+   Creating a custom group policy is the recommended method.
+   If you created a custom group policy for clientless SSL VPN users, apply it to the connection profile that will be used by clientless SSL VPN users. 
+   You can apply the group policy to the default connection profile or to a custom connection profile; however, a custom connection profile is recommended. 
+   If you create a custom connection profile for a basic clientless SSL VPN deployment, be sure to choose AAA (local user authentication) as the authentication method for the profile.
+   (Optional) Define an alias for the connection profile and allow a connection profile choice.
+   
+4) (Optional) Configuring basic portal features and access control: You can control the protected resources that the clientless SSL VPN users can access and the way that they access those resources by performing the following configurations:
+
+  a) Creating bookmarks: To enable the use of bookmarks, you must first create the bookmarks and then apply them to the group policy for clientless SSL VPN users.
+  b) Disabling URL entry or file-share access: This modification is made within the group policy that is configured for clientless SSL VPN users.
+  c) Configuring web ACLs: To use a web ACL, you must first create the web ACL and then apply it to the group policy that is used for clientless SSL VPN users.
+
+5) (Optional) Tuning the configuration of the Cisco ASA security appliance SSL VPN proxy operations to support potentially problematic applications: 
+
+You might not want some applications and web resources (for example, public websites) to go through the Cisco ASA security appliance. 
+The Cisco ASA security appliance, therefore, lets you disable content rewrite to enable users to browse certain sites and applications without going through the Cisco ASA security appliance.
+That approach is similar to split-tunneling in an IPsec VPN connection. 
+This capability is referred to as direct access via rewrite disable.
+
+
+
+
+
+
+
+
+
+
+
+

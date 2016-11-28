@@ -1,0 +1,117 @@
+1)
+Access the console of the Site2-Rtr and access global configuration mode.
+Site2-Rtr>en
+Site2-Rtr#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Site2-Rtr(config)#
+
+2)Begin configuring an ISAKMP policy with priority 20.
+
+Site2-Rtr(config)#crypto isakmp policy 20
+Site2-Rtr(config-isakmp)#
+
+3)
+Configure SHA-1 as the hash algorithm, preshared key as the authentication method, Diffie-Hellman group 2, an 86,400 second lifetime, and 128-bit AES as the encryption algorithm.4
+
+Site2-Rtr(config-isakmp)#hash sha
+Site2-Rtr(config-isakmp)#authentication pre-share
+Site2-Rtr(config-isakmp)#group 2
+Site2-Rtr(config-isakmp)#lifetime 86400
+Site2-Rtr(config-isakmp)#encryption aes 128
+
+4)
+Display the ISAKMP policy that is configured in the running configuration:
+Site2-Rtr(config-isakmp)#do show running-config | section crypto
+crypto isakmp policy 20
+ encr aes 
+ authentication pre-share 
+ group 2
+
+Note:
+Neither the hash command nor the lifetime command shows up in the configuration. This is because the default hash algorithm is SHA-1 and the default lifetime is 86400 seconds (24 hours).
+128 does not show up as an argument in the encr aes command. Again, this is because 128 bits is the default for AES. If you would have specified 192 or 256 bits, then that argument would show up in the running configuration.
+
+5)
+
+Display the ISAKMP policies that are currently in effect on the Site2-Rtr.
+
+Site2-Rtr(config-isakmp)#do show crypto isakmp policy
+Global IKE policy
+Protection suite of priority 20
+   encryption algorithm:   AES - Advanced Encryption Standard (128 bit keys).
+   hash algorithm:         Secure Hash Standard
+   authentication method:  Pre-Shared Key
+   Diffie-Hellman group:   #2 (1024 bit)
+   lifetime:               86400 seconds, no volume limit
+
+note:
+Displaying the ISAKMP policies in this way provides all the settings, including those that are Cisco IOS default settings.
+
+6)
+
+The policy specifies preshared key for authentication, therefore, the preshared key must be defined. Specify the string KeyForSite3Site2 as the preshared key to use with the Site3-Rtr (192.168.3.2)
+
+Site2-Rtr(config-isakmp)#exit
+Site2-Rtr(config)#crypto isakmp key KeyForSite3Site2 address 192.168.3.2
+
+Configure the IPsec Policy:
+
+For the Site2-Rtr to peer with the Site3-Rtr and use IPsec to protect traffic between Site2 and Site3, three things must be identified in its configuration. 
+1) Which traffic to protect? 2) How to protect that traffic? 3) Where to send the protected traffic? 
+These three things are identified in a crypto map. 
+The crypto map references an ACL to specify interesting traffic.
+It references a transform-set to specify how to protect the interesting traffic. 
+It references a peer to specify where to send the protected traffic.
+In this section of the discovery, you will configure the elements of the crypto map and you will apply the crypto map to interface Gi0/2.
+
+7)
+Configure an extended IP ACL named Site3-VPN that permits IP traffic from 10.10.2.0/24 to 10.10.3.0/24.
+
+Site2-Rtr(config)#ip access-list extended Site3-VPN
+Site2-Rtr(config-ext-nacl)#permit ip 10.10.2.0 0.0.0.255 10.10.3.0 0.0.0.255
+
+8)
+
+Define a transform-set named Transform1 that specifies the use of the Encapsulating Security Payload protocol with 128-bit AES encryption and SHA-1 as the HMAC algorithm.
+
+Site2-Rtr(config-ext-nacl)#exit
+Site2-Rtr(config)#crypto ipsec transform-set Transform1 esp-aes esp-sha-hmac
+
+
+9)
+
+Define entry number 10 in a crypto map named VPN-map using ipsec-isakmp as the tunnel type. 
+Specify the ACL you just created (Site3-VPN) as the crypto ACL.
+Specify the transform-set you just created (Transform1) as the transform-set. Set the peer to the Site3-Rtr (192.168.3.2).
+
+
+Site2-Rtr(cfg-crypto-trans)#exit
+Site2-Rtr(config)#crypto map VPN-map 10 ipsec-isakmp
+% NOTE: This new crypto map will remain disabled until a peer
+        and a valid access list have been configured.
+Site2-Rtr(config-crypto-map)#match address Site3-VPN
+Site2-Rtr(config-crypto-map)#set transform-set Transform1
+Site2-Rtr(config-crypto-map)#set peer 192.168.3.2
+
+10)
+
+Assign the crypto map to interface Gi0/2.
+
+Site2-Rtr(config-crypto-map)#exit
+Site2-Rtr(config)#int g0/2  
+Site2-Rtr(config-if)#crypto map VPN-map
+*Dec  9 16:54:18.194: %CRYPTO-6-ISAKMP_ON_OFF: ISAKMP is ON
+Site2-Rtr(config-if)#end
+*Dec  9 16:54:34.549: %SYS-5-CONFIG_I: Configured from console by console
+Site2-Rtr#
+
+
+11)
+
+
+
+
+
+
+
+

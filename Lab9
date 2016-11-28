@@ -109,7 +109,422 @@ Site2-Rtr#
 11)
 
 
+Display the current crypto map status on the Site2-Rtr.
 
+Site2-Rtr#show crypto map
+Crypto Map IPv4 "VPN-map" 10 ipsec-isakmp
+        Peer = 192.168.3.2
+        Extended IP access list Site3-VPN
+            access-list Site3-VPN permit ip 10.10.2.0 0.0.0.255 10.10.3.0 0.0.0.255
+        Current peer: 192.168.3.2
+        Security association lifetime: 4608000 kilobytes/3600 seconds
+        Responder-Only (Y/N): N
+        PFS (Y/N): N
+        Mixed-mode : Disabled
+        Transform sets={ 
+                Transform1:  { esp-aes esp-sha-hmac  } , 
+        }
+        Interfaces using crypto map VPN-map:
+                GigabitEthernet0/2
+                
+ 
+ 12)
+ 
+ 
+ Verify, from the console of the Site2-Rtr, that there are currently no ISAKMP or IPsec SAs between the Site2-Rtr and the Site3-Rtr.
+ 
+ Site2-Rtr#show crypto isakmp sa
+IPv4 Crypto ISAKMP SA
+dst             src             state          conn-id status
+IPv6 Crypto ISAKMP SA
+
+ite2-Rtr#show crypto ipsec sa
+interface: GigabitEthernet0/2
+    Crypto map tag: VPN-map, local addr 192.168.2.2
+
+   protected vrf: (none)
+   local  ident (addr/mask/prot/port): (10.10.2.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+   current_peer 192.168.3.2 port 500
+     PERMIT, flags={origin_is_acl,}
+    #pkts encaps: 0, #pkts encrypt: 0, #pkts digest: 0
+    #pkts decaps: 0, #pkts decrypt: 0, #pkts verify: 0
+    #pkts compressed: 0, #pkts decompressed: 0
+    #pkts not compressed: 0, #pkts compr. failed: 0
+    #pkts not decompressed: 0, #pkts decompress failed: 0
+    #send errors 5, #recv errors 0
+
+     local crypto endpt.: 192.168.2.2, remote crypto endpt.: 192.168.3.2
+     plaintext mtu 1500, path mtu 1500, ip mtu 1500, ip mtu idb GigabitEthernet0/2
+     current outbound spi: 0x0(0)
+     PFS (Y/N): N, DH group: none
+
+     inbound esp sas:
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+     outbound ah sas:
+     outbound pcp sas:
+     
+     Note the following:
+The router is properly configured to protect traffic between 10.10.2.0/24 and 10.10.3.0/24 using 192.168.3.2 as the peer. But, currently, there are no IPsec SAs listed.
+
+13)
+
+Access the desktop of the Site2-Srv, open a Terminal window and attempt to ping the Site3-Srv (10.10.3.10). This should succeed. Use <Ctrl-C> to terminate the ping.
+
+14)Return to the console of the Site2-Rtr. Verify that there is now an ISAKMP SA between the two routers.
+
+
+Site2-Rtr#show crypto isakmp sa 
+IPv4 Crypto ISAKMP SA
+dst             src             state          conn-id status
+192.168.3.2     192.168.2.2     QM_IDLE           1001 ACTIVE
+
+IPv6 Crypto ISAKMP SA
+ 
+ 15)
+ 
+ Verify that there are now also IPsec SAs between the two routers.
+ 
+ Site2-Rtr#show crypto ipsec sa
+ 
+ ##############
+ 
+ 
+ Configure Hub and Spoke Site-to-Site VPN
+ Site-to-site VPN was already configured between Site 3 and Site 4. 
+ You just finished configuring site-to-site VPN between Site 2 and Site 3. 
+ The configuration of the crypto ACLs on the three routers can be adjusted to allow hub and spoke VPN between Site 2 and Site 4, using the Site3-Rtr as the hub. 
+ The crypto ACLs used between the Site2-Rtr and Site3-Rtr need to include traffic between Site 2 and Site 4. 
+ The crypto ACLs used between Site3-Rtr and Site4-Rtr also need to include traffic between Site 2 and Site 4.
+ You will perform the appropriate crypto ACL updates in this section of the discovery exercise.
+ 
+ 16)Display the crypto ACL configured on the Site2-Rtr.
+ 
+ Site2-Rtr#show access-list    
+Extended IP access list Site3-VPN
+    10 permit ip 10.10.2.0 0.0.0.255 10.10.3.0 0.0.0.255 (17 matches)
+
+
+
+17)Add an entry to the Site3-VPN ACL that will permit IP traffic from Site2 (10.10.2.0/24) to Site 4 (10.10.4.0/24).
+
+
+Site2-Rtr#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Site2-Rtr(config)#ip access-list extended Site3-VPN
+Site2-Rtr(config-ext-nacl)#permit ip 10.10.2.0 0.0.0.255 10.10.4.0 0.0.0.255
+Site2-Rtr(config-ext-nacl)#end
+*Dec  9 18:23:40.766: %SYS-5-CONFIG_I: Configured from console by console
+
+
+Note the following:
+As the implementation of the VPN changes, the names that were originally chosen for the crypto ACLs become less appropriate. 
+The name Site3-VPN was appropriate when the ACL identified VPN traffic that is destined for Site 3. 
+Now that it also identifies traffic to Site 4, better choices for the ACL name may have been VpnThroughSite3 or VPN-To-Hub or other similar names. 
+In the temporary lab environment, we won’t bother to change the ACL names. 
+In a production environment, it is best to understand the long-term requirements before implementing configurations, and also to choose appropriate and meaningful names for the configuration elements.
+
+18)Verify that there are now two entries in the Site3-VPN ACL that permit traffic from Site 2 to Site 3 and Site 2 to Site 4, respectively.
+
+Site2-Rtr#show access-list
+Extended IP access list Site3-VPN
+    10 permit ip 10.10.2.0 0.0.0.255 10.10.3.0 0.0.0.255 (17 matches)
+    20 permit ip 10.10.2.0 0.0.0.255 10.10.4.0 0.0.0.255
+
+19)Access the console of the Site3-Rtr. Display the ACLs that are configured on the Site3-Rtr.
+
+Site3-Rtr#show access-list
+Extended IP access list Site3-to-Site1
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.1.0 0.0.0.255
+Extended IP access list Site3-to-Site2
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.2.0 0.0.0.255 (14 matches)
+Extended IP access list Site3-to-Site4
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.4.0 0.0.0.255 (3 matches)
+
+
+20)The ACL named Site3-to-Site2 is referenced in the crypto map entry that is associated with the Site2-Rtr. 
+   Similarly, the ACL named Site3-to-Site4 is referenced in the crypto map entry that is associated with the Site4-Rtr. 
+   Both ACLs only permit IP traffic that is sourced from Site3 (10.10.3.0/24). 
+   Add an entry to the Site3-to-Site2 ACL that permits IP traffic that is sourced from Site4 (10.10.4.0/24) and destined to Site2 (10.10.2.0/24). 
+   Also, add an entry to the Site3-to-Site4 ACL that permits IP traffic that is sourced from Site2 (10.10.2.0/24) and destined to Site4 (10.10.4.0/24).
+ 
+ Site3-Rtr#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Site3-Rtr(config)#ip access-list extended Site3-to-Site2
+Site3-Rtr(config-ext-nacl)#permit ip 10.10.4.0 0.0.0.255 10.10.2.0 0.0.0.255
+Site3-Rtr(config-ext-nacl)#exit
+Site3-Rtr(config)#ip access-list extended Site3-to-Site4           
+Site3-Rtr(config-ext-nacl)#permit ip 10.10.2.0 0.0.0.255 10.10.4.0 0.0.0.255
+Site3-Rtr(config-ext-nacl)#end
+*Dec  9 18:26:42.021: %SYS-5-CONFIG_I: Configured from console by console
+Site3-Rtr#
+
+21)Display the ACLs on the Site3-Rtr one more time. Carefully look at the ACLs to confirm that the entries are properly configured.
+
+Site3-Rtr#show access-list
+Extended IP access list Site3-to-Site1
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.1.0 0.0.0.255
+Extended IP access list Site3-to-Site2
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.2.0 0.0.0.255 (14 matches)
+    20 permit ip 10.10.4.0 0.0.0.255 10.10.2.0 0.0.0.255
+Extended IP access list Site3-to-Site4
+    10 permit ip 10.10.3.0 0.0.0.255 10.10.4.0 0.0.0.255
+    20 permit ip 10.10.2.0 0.0.0.255 10.10.4.0 0.0.0.255
+
+
+22)
+
+The Site4-Rtr is the last device to configure. Access the console of the Site4-Rtr and display the ACLs that are configured.
+
+Site4-Rtr>en
+Site4-Rtr#show access-list
+Extended IP access list Site4-to-Site3
+    10 permit ip 10.10.4.0 0.0.0.255 10.10.3.0 0.0.0.255 
+
+23) 
+As you probably expected, the crypto ACL only permits IP traffic from Site 4 to Site 3. Add an entry to the ACL that permits IP traffic from Site 4 (10.10.4.0/24) to Site 2 (10.10.2.0/24).
+
+
+Site4-Rtr#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Site4-Rtr(config)#ip access-list extended Site4-to-Site3 
+Site4-Rtr(config-ext-nacl)#permit ip 10.10.4.0 0.0.0.255 10.10.2.0 0.0.0.255
+Site4-Rtr(config-ext-nacl)#end
+*Dec  9 18:28:12.185: %SYS-5-CONFIG_I: Configured from console by console
+Site4-Rtr#
+
+ 
+24)
+
+One more time, display the contents of the crypto ACL to verify that the new entry was properly configured, permitting traffic from Site 4 to Site 2.
+
+Site4-Rtr#show access-list
+Extended IP access list Site4-to-Site3
+    10 permit ip 10.10.4.0 0.0.0.255 10.10.3.0 0.0.0.255 
+    20 permit ip 10.10.4.0 0.0.0.255 10.10.2.0 0.0.0.255
+Site4-Rtr#
+
+25)
+Access the desktop of the Site2-Srv. Use the Terminal window to ping the Site4-Srv (10.10.4.10). This should succeed. Use <Ctrl-C> to terminate the ping.
+
+26)
+
+Access the console of the Site2-Rtr. Display the IPsec SAs that are active on the Site2-Rtr. The output will be long, but you should note that there are a total of four IPsec SAs now. Two are inbound and two are outbound. Two are associated with traffic from Site 2 to Site 3 and were negotiated and verified earlier in the lab. Two are new and associated with traffic from Site 2 to Site 4. Note: Parts of the following output have been omitted and comments have been inserted into the output. This has been done to highlight the existence of the four IPsec SAs.
+
+Site2-Rtr#show crypto ipsec sa
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.2.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+
+
+Note the following:
+The two ESP SAs listed below are associated with the IPsec proxy displayed above. The IPsec proxy that is listed above itself is defined by a line in the crypto ACL. This proxy will protect IP traffic from 10.10.2.0/24 to 10.10.3.0/24.
+<…output omitted…>
+     inbound esp sas:
+      spi: 0xD79F61CF(3617546703)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 3, flow_id: SW:3, sibling_flags 80004040, crypto map: VPN-map
+        sa timing: remaining key lifetime (k/sec): (4371017/3572)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+      spi: 0xE7EF1975(3891206517)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 4, flow_id: SW:4, sibling_flags 80004040, crypto map: VPN-map
+        sa timing: remaining key lifetime (k/sec): (4371017/3572)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     outbound ah sas:
+     outbound pcp sas:
+
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.2.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.4.0/255.255.255.0/0/0)
+
+current_peer 192.168.3.2 port 500
+Note the following:
+The two ESP SAs listed below are associated with the IPsec proxy displayed above. The IPsec proxy that is listed above itself is defined by a line in the crypto ACL. This proxy will protect IP traffic from 10.10.2.0/24 to 10.10.4.0/24.
+The IPSec peer for traffic from Site 2 to Site 4 is 192.168.3.2, the Site3-Rtr. Traffic between Site 2 and Site 4 must traverse the Site3-Rtr as a hub.
+It is important to understand that there are unique IPsec SAs per line of the crypto ACLs. The SAs are negotiated when interesting traffic matches a particular line in the ACL.
+<…output omitted…>
+     inbound esp sas:
+      spi: 0xA49CA165(2761728357)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 1, flow_id: SW:1, sibling_flags 80004040, crypto map: VPN-map
+        sa timing: remaining key lifetime (k/sec): (4235336/2396)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+      spi: 0x112C9FE8(288137192)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 2, flow_id: SW:2, sibling_flags 80004040, crypto map: VPN-map
+        sa timing: remaining key lifetime (k/sec): (4235335/2396)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     outbound ah sas:
+     outbound pcp sas:
+     
+ 27)
+ Move to the console of Site3-Rtr. Display the status of the IPsec-SAs on Site3-Rtr. 
+ Note: Since Site3-Rtr is not only configured with multiple line crypto ACLs, but also it is configured with multiple IPsec peers, there will be even more output to sift through. 
+ But taking the time to examine the output can be enlightening.
+ Again, parts of the following output have been omitted and comments have been inserted into the output.
+ 
+ Site3-Rtr#show crypto ipsec sa
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.2.0/255.255.255.0/0/0)
+Note the following:
+The two ESP SAs listed below are associated with the IPsec proxy displayed above. The IPsec proxy that is displayed is defined by a line in the crypto ACL. This proxy will protect IP traffic from 10.10.3.0/24 to 10.10.2.0/24.
+     inbound esp sas:
+      spi: 0xE7EF1975(3891206517)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 5, flow_id: SW:5, sibling_flags 80000040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4364914/3493)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+      spi: 0xD79F61CF(3617546703)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 6, flow_id: SW:6, sibling_flags 80000040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4364914/3493)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     outbound ah sas:
+     outbound pcp sas:
+
+
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.1.0/255.255.255.0/0/0)
+Note the following:
+The proxy that is listed above will protect IP traffic from 10.10.3.0/24 to 10.10.1.0/24. Since there is a crypto ACL entry that is defined in the Site3-Rtr configuration, there is a placeholder for this IPsec proxy in the output. However, the Site1-ASA has not even been configured for VPN yet, so there are no active SAs associated with this proxy, as shown in the output immediately below.
+<…output omitted…>
+     inbound esp sas:
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+     outbound ah sas:
+     outbound pcp sas:
+
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.2.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.4.0/255.255.255.0/0/0)
+Note the following:
+The proxy that is listed above will protect IP traffic from 10.10.2.0/24 to 10.10.4.0/24. This proxy is defined by one of the lines that you added to the Site3-Rtr crypto ACLs earlier in this exercise. It allows the Site3-Rtr to act as a hub between Site 2 and Site 4.
+<…output omitted…>
+     inbound esp sas:
+      spi: 0xD1C4BBE2(3519331298)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 3, flow_id: SW:3, sibling_flags 80004040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4195037/2326)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+      spi: 0x89A20A58(2309098072)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 4, flow_id: SW:4, sibling_flags 80004040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4195037/2326)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     outbound ah sas:
+     outbound pcp sas:
+
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.4.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.2.0/255.255.255.0/0/0)
+Note the following:
+The proxy that is listed above will protect IP traffic from 10.10.4.0/24 to 10.10.2.0/24. Again, this proxy is defined by the other line that you added to the Site3-Rtr crypto ACLs earlier in this exercise. It allows the Site3-Rtr to act as a hub between Site 4 and Site 2.
+<…output omitted…>
+     inbound esp sas:
+      spi: 0x112C9FE8(288137192)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 1, flow_id: SW:1, sibling_flags 80000040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4216452/2325)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+      spi: 0xA49CA165(2761728357)
+        transform: esp-aes esp-sha-hmac ,
+        in use settings ={Tunnel, }
+        conn id: 2, flow_id: SW:2, sibling_flags 80000040, crypto map: VPNMAP
+        sa timing: remaining key lifetime (k/sec): (4216452/2325)
+        IV size: 16 bytes
+        replay detection support: Y
+        Status: ACTIVE(ACTIVE)
+     outbound ah sas:
+     outbound pcp sas:
+
+<…output omitted…>
+   local  ident (addr/mask/prot/port): (10.10.3.0/255.255.255.0/0/0)
+   remote ident (addr/mask/prot/port): (10.10.4.0/255.255.255.0/0/0)
+Note the following:
+The proxy that is listed above will protect IP traffic between 10.10.3.0/24 and 10.10.4.0/24. While the Site3-Rtr and Site4-Rtr are configured for IPsec between them, there has been no interesting traffic to trigger negotiation of these IPsec SAs. Therefore there is none that are listed below. If you generate interesting traffic (such as pinging the Site4-Srv from the Site3-Srv), then these SAs would be negotiated.
+<…output omitted…>
+     inbound esp sas:
+     inbound ah sas:
+     inbound pcp sas:
+     outbound esp sas:
+     outbound ah sas:
+     outbound pcp sas:
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 
 
 

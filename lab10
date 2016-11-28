@@ -1,0 +1,352 @@
+Execute the Site-to-Site VPN Wizard
+1)
+
+Access the desktop of the Site1-PC. Use the desktop icon to launch Cisco ASDM. Connect to the Site1-ASA (10.10.1.1), authenticating as admin with the password Cisco123!.
+
+2)
+In Cisco ASDM, from the drop-down menus at the top of the window, navigate to: Wizards > VPN Wizards > Site-to-Site VPN Wizard.
+
+3)
+Click Next in the Introduction window.
+
+4)
+
+On the Peer Device Identification window, enter 192.168.3.2 in the Peer IP Address field and select the interface outside. Click Next.
+
+5)
+
+On the Traffic to Protect window, enter 10.10.1.0/24 in the Local Network field and 10.10.3.0/24 in the Remote Network field. ASDM may change 10.10.1.0/24 to inside-network. This is OK. Click Next.
+
+6)
+
+On the Security Panel, select Simple Configuration and enter KeyForSite3Site1. Click Next.
+
+7)
+
+Understanding the interaction of NAT with VPN is very important, and you will work with this later in the lab. Currently the Site1-ASA is not configured to perform NAT, so there is no NAT to exempt. For now, simply click Next on the NAT Exempt window.
+
+8)
+
+Examine the Summary window.
+
+9)
+
+Click Finish. The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+access-list outside_cryptomap line 1 extended permit ip 10.10.1.0 255.255.255.0 10.10.3.0 255.255.255.0 
+      group-policy GroupPolicy_192.168.3.2 internal
+      group-policy GroupPolicy_192.168.3.2 attributes
+        vpn-tunnel-protocol ikev1 ikev2
+      exit
+      tunnel-group 192.168.3.2 type ipsec-l2l
+      tunnel-group 192.168.3.2 general-attributes
+        default-group-policy GroupPolicy_192.168.3.2
+      tunnel-group 192.168.3.2 ipsec-attributes
+        ikev1 pre-shared-key **********
+        ikev2 remote-authentication pre-shared-key **********
+        ikev2 local-authentication pre-shared-key **********
+        isakmp keepalive threshold 10 retry 2
+      crypto ikev1 policy 90
+        encryption aes
+   <…Many crypto ikev1 policy statements omitted…>
+<…The above policy which only explicitly specifies encryption aes is what will match with the Site3-Rtr. The default Hash (SHA), authentication (preshared key), Diffie-Hellman group (2) and lifetime (86400 seconds) are not explicitly configured…>
+      crypto ikev2 policy 10
+        group 2 5
+        encryption aes-192
+<…Several IKEv2 policies omitted…>
+      crypto ikev1 enable  outside
+      crypto ikev2 enable outside
+      crypto ipsec ikev1 transform-set ESP-AES-128-SHA esp-aes esp-sha-hmac
+<…Many crypto ipsec transform-set statements omitted…>
+<…The above transform-set is what will match with the Site3-Rtr…>
+      crypto ipsec ikev2 ipsec-proposal AES256
+        protocol esp encryption aes-256
+        protocol esp integrity md5 sha-1
+<…Several IPsec proposals associated with IKEv2 omitted…>
+      crypto map outside_map 1 match address outside_cryptomap
+      crypto map outside_map 1 set  peer  192.168.3.2
+      crypto map outside_map 1 set  ikev1 transform-set  ESP-AES-128-SHA ESP-AES-128-MD5 ESP-AES-192-SHA ESP-AES-192-MD5 ESP-AES-256-SHA ESP-AES-256-MD5 ESP-3DES-SHA ESP-3DES-MD5 ESP-DES-SHA ESP-DES-MD5
+      crypto map outside_map 1 set  ikev2 ipsec-proposal  AES256 AES192 AES 3DES DES
+      crypto map outside_map interface  outside
+      
+      
+ 10)
+ 
+ Launch a command prompt on the Site1-PC and ping the Site3-Srv (10.10.3.10). 
+ There may be a timeout or two as the VPN negotiates, but the ping should succeed.
+ Optionally, you can use Firefox to browse 10.10.3.10.
+ 
+ 11)
+ 
+ 12)
+ With the connection associated with 192.168.3.2 highlighted, click Details.
+ The Session Details window opens. Examine the details provided.
+ 
+ 13)
+ 
+ Close the Session Details window.
+ 
+ 14)
+ 
+ The Cisco ASA supports similar commands as Cisco IOS Software for verifying the Phase 1 and Phase 2 tunnel status. 
+ From the ASDM drop-down menus at the top of the window, select Tools > Command Line Interface. The Command Line Interface window opens.
+ 
+ 
+ 15)Enter the single-line command show crypto isakmp sa and click Send.
+ 
+ 16)
+ Details of the ISAKMP policy that is negotiated between the two devices can be seen with the show crypto isakmp sa detail command. Modify the command in the Command Line Interface tool and click Send
+ 
+ 17)
+ To see the details of the phase 2 IPsec SAs, enter the single-line command show crypto ipsec sa and click Send.
+ 18)
+ 
+ Close the Command Line Interface window.
+ 19)
+ 
+ In ASDM, navigate to Configuration > Site-to-Site VPN > Connection Profiles. There is one connection profile per site-to-site VPN peer. The connection profile for the Site3-Rtr is summarized in the table.
+ 
+ 20)
+ Select the Connection Profile that is associated with 192.168.3.2 and click Edit. The Edit IPsec Site-to-Site Connection Profile: 192.168.3.2 window opens. Examine the details that are shown.
+ 
+ 21)
+ Close the Edit IPsec Site-to-Site Connection Profile: 192.168.3.2 window. Navigate to Configuration > Site-to-Site VPN > Advanced > IKE Policies. The library of IKEv1 and IKEv2 policies that were configured by the wizard are displayed.
+ 
+ 22)
+ 
+ Navigate to Configuration > Site-to-Site VPN > Advanced > IPsec Proposals (Transform Sets). The library of IPsec Transform Sets (used with IKEv1) and IPsec Proposals (used with IKEv2) are displayed.
+ 
+ 
+ ASDM offers a unique troubleshooting tool called Packet Tracer. 
+ Currently there is no problem to troubleshoot, but you will gain some exposure to the tool in this section of the discovery. 
+ You will use the Packet Tracer tool again in a later section of the discovery, when there is an issue. 
+ Seeing the normal output now will make it easier to read the abnormal output later.
+ 
+ In ASDM, select Tools > Packet Tracer. The Packet Tracer window opens.
+ 
+ 23)
+ 
+ In ASDM, select Tools > Packet Tracer. The Packet Tracer window opens.
+ 
+ 24)
+ 
+ Define the following in the Packet Tracer input fields:
+Interface: inside
+Packet Type: TCP
+Source: IP Address/10.10.1.10
+Destination: IP Address/10.10.3.10
+Source Port: 1024
+Destination Port: 80
+
+25)Uncheck the Show Animation box to increase the response speed of the tool. Then click Start. The packet-tracer CLI command is displayed in the Preview CLI Commands window. Click Send.
+
+26)
+
+The Packet Tracer output shows several steps of processing that the Site1-ASA would take on this packet. Take a moment to examine the output.
+
+
+Note the following:
+There are two VPN steps in the process flow. If you expand them, you will see that they represent encrypting the packet and sending the packet through the VPN tunnel.
+The Packet Tracer output shows all the processing that the packet would receive.
+The result is that the packet is allowed. If the packet would be dropped, you could see at which point in its processing that the drop decision was made.
+
+27)Close the Packet Tracer window.
+
+
+
+Configure PAT on the Site1-ASA
+
+In this section of the discovery, you will first attempt to connect to the Internet-Srv from the Site1-PC. 
+You will see that this fails because reply packets from the Internet-Srv cannot be routed back to the Site1-PC. 
+The Core-Rtr does not have routes for the private 10.10.1.0/24 subnet. 
+You will then configure the ASA to implement PAT for outbound connections from the 10.10.1.0/24 subnet.
+The translated address will be the interface address bound to the Site1-ASA outside interface. 
+You will then verify that the Site1-PC can connect to the Internet-Srv, and examine the active translation table on the Site1-ASA.
+
+28)
+Verify that you cannot connect from the Site1 network to the Internet-Srv. 
+Following the process in the next few steps, you will see that the TCP SYN packet from Site1 does indeed get forwarded to the Internet-Srv, but the Internet-Srv cannot reply because the Core-Rtr does not have routes for the 10.10.1.0/24 private network. 
+Begin by accessing the desktop of the Internet-Srv.
+
+
+29)
+
+Open a Terminal window and enter the command wireshark to launch the Wireshark packet capture and analysis tool.
+
+30)
+
+In the Capture pane, select the interface eth0 and click Start.
+
+31)
+
+Packet capture should start. You may see spanning tree protocol BPDUs being captured.
+
+32)
+
+Return to the desktop of the Site1-PC. Be ready to return to the console of the Internet-Srv quickly after finishing this step. Using the Command Prompt window, enter the command ftp 192.168.100.20 to initiate a connection attempt to the Internet-Srv.
+
+33)
+
+Quickly return to the Internet-Srv and use the red square icon to stop the packet capture.
+
+34)
+
+Take a moment to analyze the captured packets.
+
+35)
+
+Return to the desktop of the Site1-PC. The FTP client should still be running in the Command Prompt window. Use the command bye to terminate the FTP client.
+
+36)
+
+In the next few steps, you will configure PAT for outbound traffic from the 10.10.1.0 network to the IP address of the Site1-ASA outside interface. Begin by navigating to Configuration > Firewall > NAT Rules in ASDM. The (empty) NAT configuration table is displayed.
+
+37)
+
+Select Add > Add “Network Object” NAT Rule. The Add Network Object window opens.
+
+38)
+
+Specify the following field definitions. Leave other fields at their default value. When done, click OK.
+Name: Site1
+Type: Network
+IP Address: 10.10.1.0
+Netmask: 255.255.255.0
+NAT Type: Dynamic PAT (Hide)
+Translated Addr: outsid
+
+40)
+
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+object network Site1 
+        subnet 10.10.1.0 255.255.255.0 
+        nat (any,outside) dynamic interface
+        
+41)
+
+Now verify the PAT function. Begin by using Firefox on the Site1-PC to browse to http://192.168.100.20. The home page of the Internet-Srv should be displayed.
+
+Navigate to the Address page of the Internet-Srv web site. You should see that the client IP address that this server sees is 192.168.1.2 (the IP address of the Site1-ASA outside interface).
+
+Configure NAT Exemption on the Site1-ASA
+
+Now that PAT is configured, outbound connectivity to public networks is functional. But there is a side effect on VPN traffic. PAT will also affect traffic from Site1 to Site3. The VPN is configured with traffic between 10.10.1.0/24 and 10.10.3.0/24 as interesting. The PAT translated traffic to and from 192.168.1.2 (the Site1-ASA outside interface address) is not considered interesting. At this point, the VPN is nonfunctional. While you may consider an option to make the translated traffic interesting, understand that PAT is only effective for outbound connections. The intent of the site-to-site VPN is to allow bidirectional connectivity. For example, the Site3-Srv should be able to initiate connections to either the Site1-PC or the Site1-Srv, but it cannot if PAT is used as the translation technology.
+The solution that you will implement in this section of the discovery is to configure NAT exemption. You will configure a NAT rule in front of the PAT rule that explicitly translates 10.10.1.0/24 addresses to themselves if the destination network is 10.10.3.0/24. You will first verify that the VPN is currently nonfunctional, then you will configure NAT exemption, then you will verify VPN and NAT functionality.
+
+Verify that you can no longer reach the Site3-Srv from the Site1-PC. Using the Firefox web browser, attempt to browse to 10.10.3.10. This should not succeed.
+Task 43
+In the next few steps, you will examine what the Packet Tracer tool now shows for packets from the Site1-PC to the Site3-Srv. Begin by accessing ASDM on the Site1-PC and launching the Packet Tracer tool via Tools > Packet Tracer.
+Task 44 Show Me
+Verify that the input fields are still at the following values:
+Interface: inside
+Packet Type: TCP
+Source: IP Address/10.10.1.10
+Destination: IP Address/10.10.3.10
+Source Port: 1024
+Destination Port: 80
+Task 45
+Click Start. The packet-tracer CLI command is displayed in the Preview CLI Commands window. Click Send.
+Task 46 Show Me
+The Packet Tracer output is quite different this time. Notice that the packet was not even considered for VPN processing. Expand the first NAT processing. You can see that the source address is translated to 192.168.1.2. At this point, it is no longer interesting traffic for the VPN. The packet is forwarded, cleartext, out the outside interface. The Core-Rtr would drop that cleartext packet because it does not have a route to 10.10.3.0/24.
+Task 47
+Close the Packet Tracer window.
+Task 48
+In the next few steps, you will configure a network object that is named Site3 that maps to the 10.10.3.0/24 network. Begin by navigating to Configuration > Firewall > Objects > Network Objects/Groups in Cisco ASDM. The Network Objects table is displayed.
+
+
+
+
+Select Add > Network Object. The Add Network Object window opens.
+Task 50 Show Me
+Most of the default values are appropriate. Verify that the Type is Network, the IP version is IPv4, and the Netmask is 24 bits. Set the Name to Site3 and the IP address to 10.10.3.0.
+Task 51
+Click OK.
+Task 52 Show Me
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+Task 53
+In the next few steps, you will create the rule to exempt NAT for traffic between 10.10.1.0 and 10.10.3.0. Begin by navigating to Configuration > Firewall > NAT Rules in ASDM. The NAT rules table is displayed.
+Task 54 Show Me
+Select Add > Add NAT Rule Before “Network Object” NAT Rules. The Add NAT Rule window opens.
+Task 55 Show Me
+Set the Match Criteria: Original Packet fields as follows:
+Source Interface: Inside
+Destination Interface: Outside
+Source Address: Site1
+Destination Address: Site3
+Service: Any
+Task 56 Show Me
+The Action: The Translated Packet field defaults are appropriate for the scenario. Verify that the Source NAT Type is Static, and Original is specified for both the Source Address and Destination Address.
+Task 57
+Leave the rest of the options at their default values as well. Click OK on the Add NAT Rule window. A message indicating potential issues between Identity NAT and Proxy ARP is displayed. In this scenario, it will not matter whether Proxy ARP remains enabled or not. Simply click Yes to dismiss the message.
+Task 58 Show Me
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+Task 59 Show Me
+Take a moment to examine how both the network object-based PAT rule and the Identity NAT rule are displayed in the NAT rules table by ASDM.
+Task 60
+Verify connectivity and NAT exemption from Site1 to Site3. Begin by using Firefox on the Site1-PC to browse to the Site3-Srv (10.10.3.10). This should succeed.
+Task 61
+Navigate to the Address page on the Site3-Srv website. It should show that the client IP address that this server sees is 10.10.1.10 (the original IP address of the Site1-PC).
+Task 62
+Now verify connectivity and NAT from Site1 to the Internet-Srv. Begin by using Firefox on the Site1-PC to browse to the Internet-Srv (192.168.100.20). This should succeed.
+Task 63
+Navigate to the Address page on the Site3-Srv website. It should show that the client IP address that this server sees is 192.168.1.2 (the PAT translation to the IP address of the Site1-ASA outside interface).
+Task 64
+In the last few steps of this discovery, you will view the active translation table on the Site1-ASA using the show xlate command. Begin by selecting Tools > Command Line Interface in ASDM.
+Task 65
+Select Single Line, enter show xlate as the command, and click Send.
+Task 66 Show Me
+Review the output of the command.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

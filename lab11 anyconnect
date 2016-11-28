@@ -1,0 +1,301 @@
+Remote-Access VPN: Cisco ASA and Cisco AnyConnect:
+
+Now that ABC Inc. has their site-to-site VPN operational for partner connections, they would like to add remote-access VPN capabilities for their employees. Based on your success with taking on new challenges in the past, Kayla would like you to be involved in this project. Again, you will need some experience in the test lab before you work on the customer project. The topology and configurations in the test lab that were left in place after the last discovery exercise provide a good starting point for this discovery exercise. The Site1-ASA and Site3-Rtr are configured to provide site-to-site VPN between Site1 and Site3, and the Site1-ASA is configured to allow outbound access to the Internet-PC and Internet-Srv. Currently, the Site1-ASA does not allow any inbound access from systems on the “Internet” (the 192.168.100.0/24 subnet).
+In this discovery exercise, you will use the Cisco ASDM AnyConnect VPN Wizard to configure RA VPN services on the Site1-ASA. You will then install the AnyConnect VPN client on the Internet-PC. You will verify remote access VPN functionality, and explore how to monitor VPN status from both sides of the connection (the Site1-ASA and the AnyConnect client). During your exploration of the VPN functionality, you will see that connectivity from the Internet-PC to resources outside of Site1 is limited. You will learn about hairpin VPN configuration and split tunneling configuration as options to resolve these issues.
+Examine and Install PKI Certificates
+PKI enables automated peer authentication for the SSL protocol. The SSL server presents its identity certificate to the SSL client. The SSL client obtains the server’s public key from this certificate. To verify that the certificate is valid, and the presented public key really is the public key of the real server, the client must verify the signature on the certificate. Unless it is a self-signed certificate, the certificate is signed by a certificate authority using the CA private key. To verify the signature, the client needs to have the CA public key. The client gets this public key from the CA identity certificate. Generally, the client must have the root CA certificate in its certificate store to be able to verify the signature.
+Enrolling the Cisco ASA with a PKI is beyond the scope of this discovery. There are three certificate files that are available to you. One is an identity certificate for the Site1-ASA. This certificate contains the Site1-ASA public key. Only the Site1-ASA has the private key that is associated with this public key. A second certificate is for the signing CA that signed the Site1-ASA identity certificate. The third certificate is for the root CA that signed the signing CA certificate.
+In this section of the discovery, you will examine the content of these three certificates to gain an understanding of the hierarchy involved. You will also load the two CA certificates into the Site1-ASA CA certificate store and the Site1-ASA identity certificate into its identity certificate store.
+
+1)
+
+Access the desktop of the Site1-PC. Open Windows Explorer and navigate to the Certificates directory on the D: DVD Drive. 
+Several files with .cer and .csr extensions are displayed. Of these files, three are important for this discovery scenario.
+
+
+
+
+2)
+The first is vpn.site1.public.cer, which is the X.509 identity certificate that the ASA will present to SSL VPN clients.
+Double-click on this file in Windows Explorer. The Certificate window opens, presenting a decoding of the certificate data.
+
+3)
+Select the Details tab. There are many fields to select from. One at a time, select the following fields and examine their details in the lower pane of the window:
+a) Subject: This field is broken down into subfields that present components of the system’s identity. In this case:
+  -CN (Common Name) is Site1 SSL VPN: often the DNS hostname is listed in the CN field,
+  - O (Organization) is CCNAsec Labs. The owning company is generally specified in the O field.
+  - OU (Organizational Unit) is Lab Operations. The department that is associated with the system is generally specified in the OU field.
+
+While not used here, other fields that are often present within the subject are C for country, S for state or P for province, and L for locality.
+
+b) Subject Alternative Name: This field shows DNS Name = vpn.site1.public. When browsing an HTTPS URL, the server hostname is specified at the beginning of the URL. 
+   The browser expects that hostname to match either the CN in the subject field or a DNS Name in the Subject Alternative Name field. 
+   If neither is the case, the browser will display a security warning due to the mismatch. 
+   Because of this dependency on hostname resolution, properly functioning DNS is very important to PKI.
+
+c) Valid from and Valid to: Certificates have a limited lifespan. If the browser determines that the current time is not within the validity window that is specified by these two fields, it will display a security warning to the user. 
+   Because of this, valid time settings are very important to PKI. The NTP protocol is often used to ensure valid time.
+
+d) Issuer: This field identifies the CA that signed this identity certificate. In this case, it is the Services, Inc. 
+   Signing CA. If the browser has access to the public key of this CA, it will use the public key to verify the signature on the certificate. 
+   The browser gets the CA public key from the CA identity certificate. 
+   If the browser does not have the CA identity certificate in its certificate store, it will display a security warning to the user. 
+   Also, if the browser does have the CA identity certificate but the signature is found to be invalid, it will display a security warning to the user.
+
+f) Public Key: The public key of the Site1-ASA. The Site1-ASA is the only system that has the matching private key. 
+   Assuming that the browser accepted the name of the SSL server, found that the time was within the certificate validity period and that the CA signature was valid, then the browser will generate a session key to protect the SSL data. 
+   It will encrypt the session key with this public key and forward it to the SSL server. Only the real server (in this case, the Site1-ASA) will have the associated private key to decrypt the session key. 
+   If the server can decrypt the session key, then data can flow bidirectionally over the SSL connection that is protected by the session key that is specified by the client.
+
+
+4)Select the Certification Path tab. Note that there is a certificate chain. 
+  The Site1 SSL VPN certificate was signed by the Services, Inc. Signing CA. 
+  The Services, Inc. Signing CA certificate was signed by the Services, Inc. Root CA.
+
+5) Verify that the Internet-PC has these certificates available in its browser’s certificate store.
+   Access the desktop of the Internet-PC.
+   Click Start and type certmgr.msc in the search box, and press <Enter>. The certmgr window opens.
+   Select Trusted Root Certification Authorities > Certificates. Verify that ABC Marketing, Inc. Root CA is present in the list.
+   Select Intermediate Certification Authorities > Certificates. Verify that ABC Marketing, Inc. Signing CA is present in the list.
+   Close the certmgr window.
+   Note: The Windows certificate store is used by both Internet Explorer and the Cisco AnyConnect VPN Client. 
+   Other browsers, such as Firefox, may have their own certificate store.
+
+6) Install the root CA certificate on the Site1-ASA:
+   a) Return to the desktop of the Site1-PC. Launch Cisco ASDM using the launcher icon on the desktop. Connect to the Site1-ASA (10.10.1.1) and log in as the user admin with the password Cisco123!.
+   b) In Cisco ASDM, navigate to Configuration > Remote Access VPN > Certificate Management > CA Certificates. The (empty) table of CA certificates is displayed.
+   c) Click Add. The Install Certificate window opens.
+   d) Set the Trustpoint Name field to Services-Root-CA.
+   e) With Install From a File selected, click Browse. Navigate to Site1-PC > DVD Drive (D:) CCNAsec Files > Certificates. Select services.public.root-ca.cer and click Install.
+   f) Click Install Certificate.
+      The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+        crypto ca trustpoint Services-Root-CA
+          revocation-check none
+          no id-usage
+          enrollment terminal
+        crypto ca authenticate Services-Root-CA nointeractive
+          <…Encoded certificate data omitted…>
+        quit
+   h) Click OK on the message indicating successful certificate installation. The CA Certificates table should now have one entry.
+
+
+7) Repeat this process to install the secondary signing CA certificate on the Site1-ASA:
+ a) Click Add. The Install Certificate window opens.
+ 
+ b)Set the Trustpoint Name field to Services-Signing-CA.
+ 
+ c)With Install From a File selected, click Browse. Navigate to Site1-PC > DVD Drive (D:) CCNAsec Files > Certificates. Select services.public.signing-ca.cer and click Install.
+ 
+ d) Click Install Certificate.
+ 
+ e) The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+      crypto ca trustpoint Services-Signing-CA
+        revocation-check none
+        no id-usage
+        enrollment terminal
+      crypto ca authenticate Services-Signing-CA nointeractive        <…Encoded certificate data omitted…>
+        quit
+f) Click OK on the message indicating successful certificate installation. The CA Certificates table should now have two entries.
+
+8)
+
+Install the Site1-ASA identity certificate on the Site1-ASA.
+In Cisco ASDM, navigate to Configuration > Remote Access VPN > Certificate Management > Identity Certificates. The table of CA certificates is displayed. Currently, there is one entry in the table. It is the self-signed certificate that the Cisco ASA presents to ASDM clients.
+Click Add. The Add Identity Certificate window opens.
+Set the Trustpoint Name field to SSL-VPN.
+Select Add a new identity certificate.
+Note: The following must match what is specified within the certificate that you will be importing.
+Select Self-Signed-KeyPair in the Key Pair field.
+Click Select next to the Certificate Subject DN: field. The Certificate Subject DN window opens. One at a time, select and specify the following Attribute/Value pairs and click Add:
+CN: Site1 SSL VPN
+O: CCNAsec Labs
+OU: Lab Operations
+
+Click OK when the three fields are properly defined.
+Click Advanced. The Advanced Options window opens.
+Set the FQDN field to vpn.site1.public
+Click OK on the Advanced Options window.
+Click Add Certificate.
+The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+      crypto ca trustpoint SSL-VPN
+        revocation-check none
+        keypair Self-Signed-KeyPair
+        id-usage ssl-ipsec 
+        fqdn vpn.site1.public
+        subject-name CN=Site1 SSL VPN,OU=Lab Operations,O=CCNAsec Labs
+        enrollment terminal
+      crypto ca enroll SSL-VPN noconfirm
+You will be prompted to save the Certificate Signing Request file. Since you already have the signed certificate, you will not be using this file. Simply enter test in the Save CSR to File field and click OK. Click OK on the message indicating that the CSR was saved successfully
+
+
+9)
+
+There is now a second entry in the Identity Certificates table, but note that it is listed as Pending.
+Normally, the CSR file that you just generated would be submitted to the CA service for processing and signing, and the signed identity certificate is returned to you.
+Install the signed identity certificate that is provided on the DVD-ROM drive:
+Select the pending [Site1 SSL VPN] entry in the Identity Certificates table, and click Install.
+With Install From a File selected, click Browse. Navigate to Site1-PC > DVD Drive (D:) CCNAsec Files > Certificates. Select vpn.site1.public.cer. Be careful to select the .cer file and not the .csr file. Click Install ID Certificate file.
+Click Install Certificate.
+The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+   crypto ca import SSL-VPN certificate nointeractive
+	<…Encoded certificate data omitted…>
+	quit
+Click OK on the information message indicating that the certificate import succeeded.
+
+Cisco ASDM AnyConnect VPN Wizard
+
+With the PKI identity certificates properly installed on the ASA, it is now prepared for execution of the ASDM AnyConnect VPN Wizard. 
+This wizard will walk you through a series of steps to configure the Site1-ASA to support remote-access VPN connections from AnyConnect clients.
+
+10)launch ASA wizard for remote access VPN
+
+11)
+
+In Cisco ASDM, launch the AnyConnect VPN Wizard by selecting Wizards > VPN Wizards > AnyConnect VPN Wizard. The AnyConnect VPN Connection Setup Wizard window opens.
+
+Note that there are 10 steps that are listed in the left pane of the wizard window. Execute the steps of the wizard as follows:
+a) On the Introduction step, simply click Next.
+
+b) On the Connection Profile Identification step, enter RemoteAccess as the Connection Profile Name, leave the VPN Access Interface as outside, and click Next.
+
+c) On the VPN Protocols step, uncheck IPsec but keep SSL selected. Select the SSL-VPN certificate in the Device Certificate with RSA Key field. Finish this step by clicking Next.
+
+d) On the Client Images step, click Add. Click Upload on the Add AnyConnect Client Image window. Click Browse Local Files on the Upload Image window. In the Select window, navigate to Site1-PC > DVD Drive (D:) CCNAsec Files and select anyconnect-win-4.0.00051.k9.pkg. Be careful to select the .pkg file and not the .msi file. Confirm each of the series of nested windows that have opened by clicking Select, Upload File, OK, and OK. The AnyConnect .pkg file should now be listed in the image table. Click Next.
+
+e) In the Authentication Methods step, select LOCAL as the AAA Server Group. Note that the user ID, admin (which you have been using to access ASDM), is already present in the local user database. Click Next.
+
+f) On the Client Address Assignment step, click New. Define a pool that is named RemoteAccessPool starting at 10.10.1.200 and ending at 10.10.1.220, with 255.255.255.0 as the subnet mask. Click OK in the Add Address Pool window, then click Next to finish the step.
+
+g) On the Network Name Resolution Servers step, leave the DNS Servers and WINS server fields empty, but set the Domain Name field to site1.private. Click Next. You will receive a warning about the lack of DNS server requirements. There is not a DNS server in this lab topology, so click No to indicate that you do not want to set up DNS.
+
+h) On the NAT Exempt step, click the Exempt VPN traffic from network address translation checkbox. Accept the default values of the Inside Interface (inside) and the Local Network (any4). Click Next.
+
+i) On the AnyConnect Client Deployment step, review the page and click Next.
+
+j) On the Summary step, review the settings that are defined by the wizard. If they appear appropriate, click Finish. If not, use the Back buttons to retrace your steps.
+
+The Preview CLI Commands window opens, displaying the commands that will be sent to the Cisco ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+12)
+
+In ASDM, navigate to Configuration > Remote Access VPN > Network (Client) Access > AnyConnect Connection Profiles. Examine the top section of the AnyConnect Connection Profiles page, which is labeled Access Interfaces.
+
+Note the following:
+a) SSL access is allowed on the outside interface.
+b) DTLS is enabled on the outside interface. DTLS is the TLS protocol using UDP for transport instead of TCP. UDP has less overhead than TCP. Also, when encapsulating TCP traffic in tunnels, reliability is provided by the tunneled TCP protocol. If the tunneling protocol also provides reliability, double retransmissions of lost packets may result. Therefore, DTLS is the preferred protocol for SSL VPN, but the ASA and the client will revert to standard TLS if DTLS is filtered anywhere along the remote-access VPN path.
+c) The Device Certificate button will open a window that allows you to select the identity certificate that will be used for SSL VPN.
+d) The Port Settings button will open a window that allows you to change the ports that are used for TLS and DTLS. By default, they use TCP 443 and UDP 443 respectively.
+
+13)
+
+At the bottom of the page is the table of defined connection profiles. There are two default profiles, and the profile that is named RemoteAccess that was defined by the wizard. Select RemoteAccess in the Connection Profiles table and click Edit. 
+The Edit AnyConnect Connection Profile window opens. Examine the Basic settings that are configured.
+
+Note the following:
+Authentication is performed using AAA only. Certificate-based authentication will require client-side identity certificates. The AAA Server Group is LOCAL. This means that authentication is based on the usernames that are defined within the Site1-ASA configuration. Using the Manage button, this can be changed. The Cisco ASA supports many AAA services, including LDAP, Active Directory, RADIUS, and TACACS+.
+The Client Address Pool is named RemoteAccessPool. Using the Select button displays the pools that are defined and allows new pools to be defined and existing pools to be edited.
+The group policy that is assigned to this connection profile is GroupPolicy_RemoteAccess. 
+Some of the settings that are associated with the group policy are displayed at the bottom of the window.
+Both SSL and IPsec are enabled. There are no DNS or WINS servers that are defined, but the domain name site1.private will be pushed down to remote access clients. 
+There are more options that can be defined within this group policy. 
+The Manage button allows you to view and edit the other settings. 
+You will modify this group policy in a later section of this discovery exercise.
+
+
+
+14)
+
+Cisco ASDM generally provides multiple paths to common configuration elements. Explore these paths by navigating along the following alternate paths to settings that you have just looked at via the Edit AnyConnect Connection Profile window.
+Navigate to Configuration > Remote Access VPN > AAA/Local Users > AAA Server Groups. This path is equivalent to what is provided by the AAA Server Group Manage button on the Edit AnyConnect Connection Profile window.
+Navigate to Configuration > Remote Access VPN > Network (Client) Access > Address Assignment > Address Pools. This path is equivalent to what is provided by the Client Address Pools Select button on the Edit AnyConnect Connection Profile window.
+Navigate to Configuration > Remote Access VPN > Network (Client) Access > Group Policies. This path is equivalent to what is provided by the Group Policy Manage button on the Edit AnyConnect Connection Profile window.
+
+15)
+
+Access the desktop of the Internet-PC, launch Windows Explorer and navigate to Internet-PC > DVD Drive (D:) CCNAsec Files.
+
+16)
+
+Double-click the installation file (anyconnect-win-4.0.00051-pre-deploy-k9.msi). The Cisco AnyConnect Secure Mobility Client Setup window opens.
+
+17)
+
+Proceed through the setup wizard by clicking Next. Accepting the terms in the License Agreement, click Next again, then click Install and Finish.
+
+18)
+
+In Windows Explorer, navigate to Internet-PC > Local Disk (C:) > Windows > System32 >drivers > etc. Find the file that is named hosts, right-click, and select Edit with Notepad++.
+
+19)
+
+In Notepad++, add the following line to the end of the hosts file:192.168.1.2 vpn.site1.public
+
+20) In Notepad++, select File > Save, and then close the Notepad++ application.
+
+Now it is time to see the remote-access VPN in action. 
+In this section of the discovery, you will launch the AnyConnect client on the Internet-PC and connect to the Site1-ASA. 
+You will verify that you can access resources on the Site1 intranet through the VPN. 
+You will also verify tunnel status, both from within the AnyConnect client and from the ASA via ASDM.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

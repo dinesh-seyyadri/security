@@ -1,0 +1,178 @@
+1)
+
+Access the desktop of the Site1-PC, launch Cisco ASDM via the launcher icon on the desktop, connect to the Site1-ASA (10.10.1.1) and authenticate as admin with Cisco123! as the password.
+
+2)
+
+Launch the wizard via Wizards > VPN Wizards > Clientless SSL VPN Wizard.
+
+3)
+
+Complete the wizard as follows:
+Step 1 simply provides an informational description of the Clientless SSL VPN connection. Click Next.
+On the Step 2 window, define the Connection Profile Name as ClientlessAccess and check the Connection Group Alias/URL box and enter ClientlessAccess as the alias name. Leave all other fields at their default values and click Next.
+
+Note the following:
+The Certificate field is already populated with the SSL-VPN certificate that was installed during the AnyConnect VPN discovery exercise.
+On the Step 3 window, select Authenticate using the local user database. Note that the user admin is already defined in the Site1-ASA configuration. This configuration will suffice for this test. Click Next.
+
+On the Step 4 window, select Create new group policy and enter ClientlessPolicy as the group policy name. Click Next.
+
+Step 5 is the most complex step of this wizard. As the name implies, a bookmark list is a list of bookmarks. Currently, none are configured. In this step, you will create a new bookmark list that is named ClientlessBookmarks and then you will add two bookmarks to the list, as follows:
+Click Manage to the right of the Bookmark List field. The Configure GUI Customization Objects window opens.
+Click Add to add a new bookmark list. The Add Bookmark List window opens.
+Enter ClientlessBookmarks in the Bookmark List Name field.
+
+Add the first bookmark to the bookmark list. Click Add. On the Select Bookmark Type window, accept the URL with GET or POST method option and click OK. In the Add Bookmark window, enter Site1 Web as the Bookmark title, select the HTTP protocol, and enter 10.10.1.20 as the URL. Press OK.
+
+Add a second bookmark to the bookmark list. Click Add. On the Select Bookmark Type window, accept the URL with GET or POST method option and click OK. In the Add Bookmark window, enter Site1 FTP as the Bookmark title, select the FTP protocol, and enter 10.10.1.20 as the URL. Press OK.
+
+The Add Bookmark List window should now reflect a new bookmark list that is named ClientlessBookmarks with two bookmarks, one for Site1 Web and a second for Site1 FTP. Click OK.
+
+Click OK on the Configure GUI Customization Objects window.
+The Step 5 window should now indicate that ClientlessBookmarks is selected for the Bookmarks List. Click Next.
+
+Step 6 is simply a summary of the configuration choices. Review the displayed attributes. If they appear correct, click Finish. If not, use the back buttons to retrace your steps.
+
+The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+      import webvpn url-list ClientlessBookmarks disk0:/tmpAsdmImportFile495305470
+      delete /noconfirm disk0:/tmpAsdmImportFile495305470
+      group-policy ClientlessPolicy internal
+      group-policy ClientlessPolicy attributes
+        vpn-tunnel-protocol ssl-clientless
+        webvpn
+          url-list value ClientlessBookmarks
+      exit
+      exit
+      tunnel-group ClientlessAccess type remote-access
+      tunnel-group ClientlessAccess general-attributes
+        default-group-policy ClientlessPolicy
+      tunnel-group ClientlessAccess webvpn-attributes
+        group-alias ClientlessAccess enable
+        group-url https://192.168.1.2/ClientlessAccess
+
+
+4)
+
+Establish a Clientless SSL VPN connection to the Site1-ASA from the Internet-PC:
+Access the desktop of the Internet-PC.
+Open the Internet Explorer web browser and browse https://vpn.site1.public. The SSL VPN Service login page is displayed.
+Make sure to use Internet Explorer. Using the Firefox web browser will not produce the same results as described here.
+This discovery exercise builds upon the AnyConnect Remote Access VPN discovery exercise. Name resolution for vpn.site1.public is provided by the local hosts file that was edited during the previous discovery. Because the name specified in the URL matched a name in the identity certificate and the identity certificate was signed by a CA whose certificate is installed in the PC certificate store, the HTTPS session establishes without any security warnings.
+Verify that the group is ClientlessAccess and authenticate as admin with the password Cisco123!. The SSL VPN portal is displayed, including the bookmarks that were defined during the execution of the configuration wizard.
+
+
+5)
+
+Navigate using the Clientless SSL VPN Portal:
+Click the Site1 Web Bookmark. The Site1-Srv website is displayed.
+Use the Address link on the website menu to navigate to the Site1-Srv Address page.
+Note the following:
+The client IP address that this server sees is 10.10.1.1. That address is the inside interface address of the Site1-ASA. With Clientless SSL VPN, the ASA acts much like a proxy server. There is an SSL connection from the client to the ASA and then there are connections from the ASA to internal resources.
+Examine the native URL in Internet Explorer. Note that it shows vpn.site1.public as the main URL with an obfuscated representation of the URL of the internal resource. Also examine the floating toolbar that appears in the upper-right corner of the Internet Explorer window.
+
+Click the double arrow icon in the floating toolbar. This process simply moves the toolbar from the right corner to the left corner and back. If it covers something important on a web page, it can be moved.
+Click the globe icon with the arrow wrapping around it. A window opens allowing you to type in an ad hoc URL for internal resources. Enter http://10.10.1.10 and click OK. The Site1-PC web page is displayed within the portal.
+Click the house icon in the floating toolbar. This will return you to the SSL VPN Service home page.
+As you might guess, the fourth icon, which looks like a power button, will terminate the clientless SSL VPN session. Optionally, you may click it, and then log back in as you did previously.
+Click the Site1 FTP link under the File Folder Bookmarks heading. The contents of the FTP root directory on the Site1-Srv is displayed.
+
+6)
+
+View the status of the Clientless SSL Session from the perspective of the Site1-ASA.
+Return to the desktop of the Site1-PC.
+In Cisco ASDM, navigate to Monitoring > VPN > VPN Statistics > Sessions. The summary table at the top of the page should indicate that there is at least one active Clientless VPN session. It may indicate more if you logged in multiple times from the Internet-PC without explicitly logging out (for example, if you closed the web browser and then opened a new browser window and logged in again). When sessions are terminated without logging out, they must timeout on the ASA side before they are removed from the table.
+Select All Remote Access in the Filter By field. Pertinent details about each of the individual remote-access sessions are displayed in the lower table. The details include the username, the remote IP address of the client, the group policy that is assigned, the encryption protocol, and the login time and duration.
+
+With the current session highlighted, click the Details button to provide even more details about this connection, including the number of bytes sent and received and the client version reported by the web browser in its user agent field.
+
+Close the Session Details window.
+With the session selected, click the Logout button. The session will be removed from the table.
+Return to Internet Explorer running on the desktop of the Internet-PC. It continues to show the FTP page, but the VPN session has been terminated. Attempt to follow a link on the FTP portal and you are returned to the login page of the SSL VPN Service. Do not log back in at this time.
+
+
+####
+
+7)
+
+Examine the Clientless SSL Configuration
+
+The Clientless SSL VPN Wizard walked you through configuration of several elements that are associated with the Clientless SSL VPN service. If you need to modify this configuration in the future, it is good to know how to navigate around the Clientless SSL configuration options within ASDM. You will explore what was configured with the wizard in this section of the discovery exercise.
+
+
+One thing that you must understand to avoid being confused when reviewing a configuration in ASDM is that ASDM will filter what is shown depending on the configuration path within ASDM. To provide an example, examine the connection profiles under AnyConnect Connection Profiles and Clientless SSL VPN Access.
+Return to ASDM on the desktop of the Site1-PC.
+Navigate to Configuration > Remote Access VPN > Clientless SSL VPN Access > Connection Profiles. This configuration path is from the clientless perspective. Examine what is displayed in the connection profiles table via this configuration path.
+
+Note the following:
+The bottom of the table shows the ClientlessAccess connection profile that you defined with the wizard in this discovery exercise.
+The second from the bottom entry is RemoteAccess, which was defined for AnyConnect sessions in a previous discovery exercise.
+From this view, it appears that RemoteAccess is not even enabled. In fact, it is enabled, both for SSL and IPsec, but only for the AnyConnect client. The Enabled column in this table indicates whether Clientless SSL VPN is enabled.
+Now navigate to Configuration > Remote Access VPN > Network (Client) Access > AnyConnect Connection Profiles. This configuration path is from the Client-Based perspective. Examine what is displayed in the Connection Profiles table here.
+
+Note the following:
+Again, both the RemoteAccess and the ClientlessAccess connection profiles are displayed.
+From this perspective, it looks like ClientlessAccess is not enabled. Of course, it is enabled. You just demonstrated a clientless SSL VPN connection that used this profile, and you saw that it was enabled when using the previous path in ASDM. But it is not enabled for Client-Based SSL or Client-Based IPsec connections, therefore, it is not checked here.
+
+
+8)
+
+Take a closer look at the Clientless Access connection profile configuration.
+Return to the clientless perspective via Configuration > Remote Access VPN > Clientless SSL VPN Access > Connection Profiles.
+As with Client-Based connections, the global- and interface-based settings, including the selected identity certificate and SSL port settings, are managed at the top of this window.
+
+Note the following:
+These settings are shared between client-based and clientless connections. For example, if you change the port settings here, they will also be changed for client-based connections.
+The connection profiles are listed in a table at the bottom of this window. Select the ClientlessAccess profile and click Edit. The Edit Clientless SSL VPN Connection Profile window opens. Most of what is displayed here was configured via the wizard. Examine the configuration.
+
+Note the following:
+The profile name, alias, authentication method, and group policies were all defined by the wizard.
+The DNS Server Group, however, is not configurable via the wizard. It can be configured here. It can also be configured under Configuration > Device Management > DNS > DNS Client.
+If bookmarks are defined using hostnames instead of IP addresses, then the DNS settings must be defined with valid DNS servers. The ASA will resolve the hostnames using these settings on the behalf of the client.
+The Group Policy that is selected (ClientlessPolicy) was created by the wizard. Examine its definition as follows:
+Click the Manage Button. The Group Policies table is displayed.
+Select Clientless Policy and click Edit. The Edit Internal Group Policy window is displayed.
+Note the following:
+This window can also be reached directly via Configuration > Remote Access VPN > Clientless SSL VPN Access > Group Policies.
+Select Portal in the navigation tree on the left side of the window.
+Most of the group policy options that are available are beyond the scope of this discovery exercise. But note that the first option is the Bookmark List. This option is the only significant setting that is affected by the wizard. From here, you would have the option to click Manage to edit the bookmark list that is defined with the wizard.
+Click Cancel three times to close the Edit Internal Group Policy window, the Configure Group Policies window, and the Edit Clientless SSL VPN Connection Profile windows.
+
+9)
+
+In ASDM, navigate to Configuration > Remote Access VPN > Clientless SSL VPN Access > Portal > Customization
+
+10)
+Select the customization that is named DfltCustomization and click Edit. The Edit Customization Object window opens.
+
+11)
+
+Note that you can modify aspects of the login page, the logout page, and the main portal page. Here you will concentrate on the main portal page.
+Using the navigation tree on the left side of the window, select Portal Page > Title Panel.
+Change the Title Panel Text field to Site1 Clientless SSL VPN.
+Change the Font Size to 150% and the Font Weight to Bold.
+Change the Font Color to a dark blue, the Background Color to a very light blue, and keep Use Gradient checked.
+Click OK
+
+12)
+
+In the ASDM main window, click Apply. The Preview CLI Commands window opens, displaying the commands that will be sent to the ASA. Examine the commands. If they appear correct, click Send. If they do not, click Cancel and retrace your steps.
+
+ import webvpn customization DfltCustomization disk0:/tmpAsdmImportFile1110395200
+      delete /noconfirm disk0:/tmpAsdmImportFile1110395200
+
+
+13)
+
+Return to the desktop of the Internet-PC. Using Internet Explorer, connect to the Site1-ASA SSL VPN via https://vpn.site1.public.
+
+14)
+
+Authenticate as admin, using Cisco123! as the password.
+
+15)
+
+Observe the updated title panel in the SSL VPN Portal. The text, font, and background should all reflect the changes that you specified via ASDM.
+
+
+
